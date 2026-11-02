@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './ui';
 import { ils, dateFmt, toDate } from './calc';
-import { monthShort, monthLong } from './expenseCalc';
+import { monthLong } from './expenseCalc';
 import { todayISO, uid } from './constants';
 
 const INTERVALS = [
@@ -37,26 +37,27 @@ export default function Recurring({ items = [], onSave }) {
   const today = todayISO();
   const rows = items.map((it) => ({ ...it, next: nextDue(it, today), monthly: it.amount / it.every }))
     .sort((a, b) => a.next.localeCompare(b.next));
-  const monthlyTotal = rows.reduce((s, r) => s + r.monthly, 0);
-  const yearlyTotal = monthlyTotal * 12;
 
-  // 12 החודשים הקרובים: כמה יוצא בכל חודש
-  const start = new Date(); start.setDate(1);
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const byMonth = Object.fromEntries(months.map((m) => [m, []]));
+  // מה נופל ב-3 החודשים הקרובים
+  const horizon = addMonthsISO(today, 3);
+  const upcoming = [];
   rows.forEach((r) => {
     for (let k = 0; k < 40; k++) {
       const d = addMonthsISO(r.next, r.every * k);
-      const m = d.slice(0, 7);
-      if (m > months[11]) break;
-      if (byMonth[m]) byMonth[m].push(r);
+      if (d >= horizon) break;
+      upcoming.push({ ...r, due: d });
     }
   });
-  const sums = months.map((m) => byMonth[m].reduce((s, r) => s + r.amount, 0));
-  const max = Math.max(...sums, 1);
+  upcoming.sort((a, b) => a.due.localeCompare(b.due));
+  const upcomingTotal = upcoming.reduce((t, u) => t + u.amount, 0);
+  const byMonth = [];
+  upcoming.forEach((u) => {
+    const m = u.due.slice(0, 7);
+    let g = byMonth.find((x) => x.m === m);
+    if (!g) byMonth.push(g = { m, items: [], total: 0 });
+    g.items.push(u); g.total += u.amount;
+  });
+  const [showAll, setShowAll] = useState(false);
 
   const save = (it) => onSave(it.id && items.some((x) => x.id === it.id)
     ? items.map((x) => (x.id === it.id ? it : x))
@@ -68,57 +69,59 @@ export default function Recurring({ items = [], onSave }) {
       <div className="rec-head">
         <div>
           <h2 className="sec">הוצאות תקופתיות</h2>
-          <p className="muted">הוצאות שלא מגיעות כל חודש — ביטוח רכב, טסט, רופא שיניים — כדי לדעת מראש מתי הן נופלות וכמה לשים בצד.</p>
+          <p className="muted">הוצאות שלא מגיעות כל חודש — ביטוח רכב, טסט, רופא שיניים — כדי לדעת מה מגיע ב-3 החודשים הקרובים ולהתכונן.</p>
         </div>
         <button className="btn primary" onClick={() => setEditing('new')}>הוספת הוצאה תקופתית</button>
       </div>
 
       {!rows.length ? (
-        <div className="empty small"><p>עוד אין הוצאות תקופתיות. הוסיפו את הראשונה ותראו כמה כדאי להפריש כל חודש.</p></div>
+        <div className="empty small"><p>עוד אין הוצאות תקופתיות. הוסיפו את הראשונה ותראו מתי היא מגיעה.</p></div>
       ) : (
         <>
-          <dl className="month-summary">
-            <div><dt>להפריש כל חודש</dt><dd>{ils(monthlyTotal)}</dd></div>
-            <div><dt>סה״כ בשנה</dt><dd>{ils(yearlyTotal)}</dd></div>
-            <div><dt>הבאה בתור</dt><dd className="small-dd">{rows[0].name}<small>{dateFmt(rows[0].next)} · {whenText(rows[0].next)}</small></dd></div>
-          </dl>
-
-          <h3>מה יוצא ב-12 החודשים הקרובים</h3>
-          <div className="rec-bars" dir="ltr">
-            {months.map((m, i) => (
-              <div key={m} className="rec-col" title={`${monthLong(m)}: ${byMonth[m].map((r) => r.name).join(', ') || 'אין'}`}>
-                <span className="rec-amt">{sums[i] ? `${Math.round(sums[i] / 100) / 10}K` : ''}</span>
-                <div className="rec-bar"><i style={{ height: `${(sums[i] / max) * 100}%` }} /></div>
-                <span className="sbar-label">{monthShort(m)}{(i === 0 || m.endsWith('-01')) && <small>{m.slice(0, 4)}</small>}</span>
+          <div className="upcoming">
+            <div className="up-total">
+              <span>צפוי ב-3 החודשים הקרובים</span>
+              <strong>{ils(upcomingTotal)}</strong>
+              <small className="muted">עד {dateFmt(horizon)}</small>
+            </div>
+            {!byMonth.length && <p className="muted">אין הוצאות תקופתיות ב-3 החודשים הקרובים.</p>}
+            {byMonth.map((g) => (
+              <div key={g.m} className="up-month">
+                <div className="up-month-head"><h3>{monthLong(g.m)}</h3><span className="num">{ils(g.total)}</span></div>
+                <ul>
+                  {g.items.map((u) => (
+                    <li key={u.id + u.due}>
+                      <span className="rec-main"><span className="rec-name">{u.name}</span>
+                        <span className="rec-meta">{dateFmt(u.due)} · {whenText(u.due)}{u.note ? ` · ${u.note}` : ''}</span></span>
+                      <span className="num rec-amt-lg">{ils(u.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
 
-          <ul className="rec-list">
-            {rows.map((r) => {
-              const soon = daysUntil(r.next) <= 30;
-              return (
-                <li key={r.id} className={soon ? 'soon' : ''}>
+          <button className="link all-toggle" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>
+            {showAll ? 'הסתרת הרשימה המלאה' : `כל ההוצאות התקופתיות (${rows.length}) — עריכה ומחיקה`}
+          </button>
+          {showAll && (
+            <ul className="rec-list">
+              {rows.map((r) => (
+                <li key={r.id}>
                   <div className="rec-main">
                     <span className="rec-name">{r.name}</span>
                     <span className="rec-meta">{intervalLabel(r.every)}{r.note ? ` · ${r.note}` : ''}</span>
                   </div>
-                  <div className="rec-when">
-                    <span>{dateFmt(r.next)}</span>
-                    <small className={soon ? 'down' : 'muted'}>{whenText(r.next)}</small>
-                  </div>
-                  <div className="rec-money">
-                    <span className="num">{ils(r.amount)}</span>
-                    <small className="muted">{ils(r.monthly)} לחודש</small>
-                  </div>
+                  <div className="rec-when"><span>{dateFmt(r.next)}</span><small className="muted">{whenText(r.next)}</small></div>
+                  <div className="rec-money"><span className="num">{ils(r.amount)}</span></div>
                   <div className="rec-actions">
                     <button className="link" onClick={() => setEditing(r)}>עריכה</button>
                     <button className="icon-btn" onClick={() => remove(r)} aria-label={`מחיקת ${r.name}`}>✕</button>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </>
       )}
 

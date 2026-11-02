@@ -331,3 +331,14 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
 .orig { display: block; color: var(--ink-3); font-size: .78rem; margin-top: .2rem; }
 @media (max-width: 640px) { .m-row { grid-template-columns: 1fr auto; } .m-row .mc-bar { grid-column: 1 / -1; grid-row: 2; } }
 .merchants .m-tx li { display: flex; justify-content: space-between; align-items: center; padding: .55rem .2rem; }
+.upcoming { display: grid; gap: 1.25rem; }
+.up-total { display: flex; flex-direction: column; padding: 1rem 1.25rem; background: color-mix(in srgb, var(--t-sp) 16%, var(--surface)); border-radius: 14px; }
+.up-total span { color: var(--ink-2); font-weight: 600; }
+.up-total strong { font-family: var(--serif); font-weight: 500; font-size: clamp(2.2rem, 8vw, 3rem); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.up-month-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--ink); padding-bottom: .3rem; }
+.up-month-head h3 { margin: 0; color: var(--ink); font-family: var(--serif); font-weight: 500; font-size: 1.2rem; }
+.up-month-head .num { font-weight: 700; }
+.up-month ul { list-style: none; padding: 0; margin: 0; }
+.up-month li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .65rem .2rem; border-bottom: 1px solid var(--line); }
+.rec-amt-lg { font-weight: 700; }
+.all-toggle { margin: 1.5rem 0 .75rem; }
