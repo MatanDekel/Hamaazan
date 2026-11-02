@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { monthLong, PALETTE, fullAvg } from './expenseCalc';
 import { ils, pct } from './calc';
 import { uid } from './constants';
+import Recurring from './Recurring';
 
-export default function Expenses({ exp, model, groups, onSaveGroups }) {
+export default function Expenses({ exp, model, groups, onSaveGroups, recurring, onSaveRecurring }) {
   const [mode, setMode] = useState('month');
   const [sel, setSel] = useState(null);
 
@@ -22,6 +23,7 @@ export default function Expenses({ exp, model, groups, onSaveGroups }) {
       <LoadState exp={exp} model={model} />
       {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} />}
       {model && mode === 'manage' && <ManageGroups model={model} groups={groups} onSave={onSaveGroups} />}
+      {mode === 'month' && <Recurring items={recurring} onSave={onSaveRecurring} />}
     </section>
   );
 }

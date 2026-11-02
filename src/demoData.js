@@ -29,6 +29,17 @@ export const demoFamily = {
   memberEmails: ['noa@example.com', 'itay@example.com'],
   owners: ['נועה', 'איתי'],
   expenseGroups: demoGroups,
+  recurring: (() => {
+    const d = (m, day) => { const x = new Date(); x.setMonth(x.getMonth() + m, day); return x.toISOString().slice(0, 10); };
+    return [
+      { id: 'r1', name: 'ביטוח רכב', amount: 3400, every: 12, date: d(2, 15), note: 'מקיף + חובה' },
+      { id: 'r2', name: 'טסט לרכב', amount: 1250, every: 12, date: d(5, 3), note: '' },
+      { id: 'r3', name: 'רופא שיניים', amount: 450, every: 6, date: d(0, 28), note: 'בדיקה וניקוי לשנינו' },
+      { id: 'r4', name: 'ועד בית', amount: 360, every: 3, date: d(1, 1), note: '' },
+      { id: 'r5', name: 'חיסון שנתי לכלב', amount: 380, every: 12, date: d(7, 10), note: '' },
+      { id: 'r6', name: 'מנוי ספוטיפיי משפחתי', amount: 330, every: 12, date: d(9, 20), note: 'מנוי שנתי' },
+    ];
+  })(),
 };
 
 export const demoFunds = [
