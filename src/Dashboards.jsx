@@ -8,8 +8,17 @@ const RANGES = [6, 12, 24];
 const TOP = 6;
 
 export default function Dashboards({ exp, model }) {
-  const [unitKey, setUnitKey] = useState(null);
-  const unit = model && unitKey && [...model.list, ...model.incomeList].find((u) => u.key === unitKey);
+  const [top, setTop] = useState('');
+  const [sub, setSub] = useState('');
+  const unit = model && top ? model.list.find((u) => u.key === top) : null;
+  const pickTop = (key) => { setTop(key); setSub(''); };
+  const pickSub = (name) => {
+    setSub(name);
+    if (name && (!unit || !unit.cats.some((c) => c.name === name))) {
+      const owner = model.list.find((u) => u.cats.some((c) => c.name === name));
+      if (owner) setTop(owner.key);
+    }
+  };
 
   return (
     <section>
@@ -23,10 +32,36 @@ export default function Dashboards({ exp, model }) {
         </div>
       </div>
       <LoadState exp={exp} model={model} />
-      {model && (unit
-        ? <UnitDetail model={model} unit={unit} onBack={() => setUnitKey(null)} />
-        : <Overview model={model} onOpen={setUnitKey} />)}
+      {model && (
+        <>
+          <FilterBar model={model} unit={unit} top={top} sub={sub} onTop={pickTop} onSub={pickSub} onClear={() => pickTop('')} />
+          {unit
+            ? <Filtered model={model} unit={unit} sub={sub} onSub={pickSub} />
+            : <Overview model={model} onOpen={pickTop} />}
+        </>
+      )}
     </section>
+  );
+}
+
+function FilterBar({ model, unit, top, sub, onTop, onSub, onClear }) {
+  const subs = unit ? unit.cats.map((c) => c.name) : model.categories.map((c) => c.name);
+  return (
+    <div className="filter-bar">
+      <label>קטגוריה עילית
+        <select value={top} onChange={(e) => onTop(e.target.value)}>
+          <option value="">כל ההוצאות וההכנסות</option>
+          {model.list.map((u) => <option key={u.key} value={u.key}>{u.name}{u.group ? '' : ' (בלי קבוצה)'}</option>)}
+        </select>
+      </label>
+      <label>קטגוריה משנית
+        <select value={sub} onChange={(e) => onSub(e.target.value)} disabled={unit && unit.cats.length < 2}>
+          <option value="">{unit ? `כל ${unit.name}` : 'הכול'}</option>
+          {subs.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </label>
+      {top && <button className="link" onClick={onClear}>ניקוי סינון</button>}
+    </div>
   );
 }
 
@@ -69,7 +104,7 @@ function Overview({ model, onOpen }) {
         {incomeList.length ? (
           <>
             <StackedBars months={months} series={incomeList.map((u) => ({ key: u.key, name: u.name, color: u.color, values: u.values }))} />
-            <TrendTable rows={incomeList} lastMonth={lastFull} onOpen={onOpen} higherIsGood title="מקור" />
+            <TrendTable rows={incomeList} lastMonth={lastFull} higherIsGood title="מקור" />
           </>
         ) : <p className="muted">אין הכנסות בטווח הזה.</p>}
       </div>
@@ -77,39 +112,60 @@ function Overview({ model, onOpen }) {
   );
 }
 
-function UnitDetail({ model, unit, onBack }) {
+function Filtered({ model, unit, sub, onSub }) {
   const { months } = model;
-  const cats = unit.cats || [];
-  const series = cats.length > 1
-    ? cats.map((c, i) => ({ key: c.name, name: c.name, color: PALETTE[i % PALETTE.length], values: c.values }))
-    : [{ key: unit.key, name: unit.name, color: unit.color, values: unit.values }];
-  const subRows = cats.map((c, i) => ({ ...c, color: series[i]?.color || unit.color }));
-  const isIncome = unit.key.startsWith('i:');
   const lastFull = months[months.length - 2];
+  const cat = sub ? unit.cats.find((c) => c.name === sub) : null;
+  const target = cat || unit;
+  const series = cat
+    ? [{ key: cat.name, name: cat.name, color: unit.color, values: cat.values }]
+    : unit.cats.length > 1
+      ? unit.cats.map((c, i) => ({ key: c.name, name: c.name, color: PALETTE[i % PALETTE.length], values: c.values }))
+      : [{ key: unit.key, name: unit.name, color: unit.color, values: unit.values }];
+  const subRows = cat ? [] : unit.cats.map((c, i) => ({ ...c, key: c.name, color: series[i]?.color || unit.color }));
+  const allSpent = model.total.reduce((a, b) => a + b, 0);
+
+  // בתי העסק שבהם הוצא הכי הרבה בסינון הזה
+  const merchants = {};
+  model.tx.filter((t) => t.unit === unit.key && (!cat || t.category === cat.name)).forEach((t) => {
+    const m = merchants[t.business] || (merchants[t.business] = { name: t.business, total: 0, count: 0 });
+    m.total += t.amount; m.count++;
+  });
+  const topMerchants = Object.values(merchants).sort((a, b) => b.total - a.total).slice(0, 8);
 
   return (
     <div className="detail">
-      <button className="link back" onClick={onBack}>חזרה לדשבורדים</button>
-      <header className="detail-head">
-        <div>
-          <h1>{unit.name}</h1>
-          {unit.group && <p className="meta">{cats.map((c) => c.name).join(', ')}</p>}
-        </div>
-      </header>
+      <h2 className="filter-title">{unit.name}{cat && <span> › {cat.name}</span>}</h2>
+      <p className="range-note">{monthLong(months[0])} עד {monthLong(months[months.length - 1])}</p>
       <dl className="stats">
-        <div><dt>{monthLong(lastFull)}</dt><dd>{ils(unit.last)}</dd></div>
-        <div><dt>ממוצע לחודש</dt><dd>{ils(unit.avg)}</dd></div>
-        <div><dt>מול הממוצע</dt><dd className={(unit.change > 0) === isIncome ? 'up' : 'down'}>{pct(unit.change, 0)}</dd></div>
-        <div><dt>סה״כ מ{monthLong(months[0])}</dt><dd>{ils(unit.sum)}</dd></div>
+        <div><dt>{monthLong(lastFull)}</dt><dd>{ils(target.last)}</dd></div>
+        <div><dt>ממוצע לחודש</dt><dd>{ils(target.avg)}</dd></div>
+        <div><dt>מול הממוצע</dt><dd className={target.change > 0.1 ? 'down' : target.change < -0.1 ? 'up' : ''}>{pct(target.change, 0)}</dd></div>
+        <div><dt>סה״כ בטווח</dt><dd>{ils(target.sum)}</dd></div>
+        <div><dt>חלק מכל ההוצאות</dt><dd>{allSpent ? `${Math.round((target.sum / allSpent) * 100)}%` : '—'}</dd></div>
       </dl>
       <div className="dash-block">
-        <StackedBars months={months} series={series} avg={unit.avg} />
+        <StackedBars months={months} series={series} avg={target.avg} />
       </div>
-      {cats.length > 1 && (
-        <>
+      {subRows.length > 1 && (
+        <div className="dash-block">
           <h2 className="sec">הקטגוריות בתוך {unit.name}</h2>
-          <TrendTable rows={subRows} lastMonth={lastFull} />
-        </>
+          <TrendTable rows={subRows} lastMonth={lastFull} onOpen={onSub} />
+        </div>
+      )}
+      {topMerchants.length > 0 && (
+        <div className="dash-block">
+          <h2 className="sec">איפה הוצאת הכי הרבה</h2>
+          <ul className="merchants">
+            {topMerchants.map((m) => (
+              <li key={m.name}>
+                <span>{m.name}<small>{m.count} עסקאות</small></span>
+                <span className="mc-bar"><i style={{ width: `${(m.total / topMerchants[0].total) * 100}%`, background: unit.color }} /></span>
+                <span className="num">{ils(m.total)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

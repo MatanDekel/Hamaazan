@@ -17,7 +17,7 @@ export function StackedBars({ months, series, income, avg, selected, onSelect })
   return (
     <div className="sbars-wrap">
       <div className="sbars" dir="ltr">
-        {avg > 0 && <div className="sbar-avg" style={{ '--p': avg / max }}><span>ממוצע {ils(avg)}</span></div>}
+        {avg > 0 && <div className="sbar-avg" style={{ '--p': avg / max }}><span dir="rtl">ממוצע {ils(avg)}</span></div>}
         {months.map((m, i) => (
           <button type="button" key={m}
             className={`sbar-col${i === last ? ' partial' : ''}${selected === m ? ' sel' : ''}${onSelect ? ' pick' : ''}`}

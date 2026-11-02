@@ -255,3 +255,15 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
 }
 .seg button { white-space: nowrap; }
 .toolbar .row { flex-wrap: wrap; }
+.filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1rem; padding: 1rem; margin-bottom: 1.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.filter-bar label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; font-weight: 600; color: var(--ink-2); flex: 1 1 12rem; }
+.filter-bar .link { padding-bottom: .6rem; }
+.filter-title { font-size: clamp(1.8rem, 6vw, 2.4rem); }
+.filter-title span { color: var(--ink-2); }
+.merchants { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.merchants li { display: grid; grid-template-columns: minmax(8rem, 1fr) 1.5fr auto; gap: 1rem; align-items: center; padding: .65rem .2rem; border-bottom: 1px solid var(--line); }
+.merchants li > span:first-child { display: flex; flex-direction: column; }
+.merchants small { color: var(--ink-3); font-size: .8rem; }
+@media (max-width: 640px) { .merchants li { grid-template-columns: 1fr auto; } .merchants .mc-bar { grid-column: 1 / -1; grid-row: 2; } }
+.filter-title { line-height: 1.25; margin-bottom: .35rem; }
+.detail .range-note { margin: 0; }
