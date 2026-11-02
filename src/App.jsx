@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, firebaseReady } from './firebase';
 import { loadOrCreateFamily, useLiveData, useDemoData, loadRiseup } from './data';
 import { demoTransactions } from './demoExpenses';
 import Expenses from './Expenses';
+import Dashboards from './Dashboards';
+import { useExpenseData } from './expenseData';
+import { buildModel } from './expenseCalc';
 import Login from './Login';
 import Investments from './Investments';
 import FundDetail from './FundDetail';
@@ -64,6 +67,9 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
   const open = funds.find((f) => f.id === openId);
+  const exp = useExpenseData(demo ? demoLoader : loadRiseup, tab === 'expenses' || tab === 'dash');
+  const groups = family.expenseGroups;
+  const model = useMemo(() => (exp.txs ? buildModel(exp.txs, groups || [], exp.months) : null), [exp.txs, groups, exp.months]);
 
   const go = (t) => { setTab(t); setOpenId(null); };
 
@@ -75,6 +81,7 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
         <nav className="tabs">
           <button className={tab === 'invest' ? 'on' : ''} onClick={() => go('invest')}>חסכונות</button>
           <button className={tab === 'expenses' ? 'on' : ''} onClick={() => go('expenses')}>הוצאות</button>
+          <button className={tab === 'dash' ? 'on' : ''} onClick={() => go('dash')}>דשבורדים</button>
           <button className={tab === 'family' ? 'on' : ''} onClick={() => go('family')}>משפחה</button>
         </nav>
         <div className="me">
@@ -87,7 +94,8 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
         {tab === 'invest' && (open
           ? <FundDetail fund={open} family={family} api={api} onBack={() => setOpenId(null)} />
           : <Investments funds={funds} family={family} onOpen={setOpenId} onAdd={() => setAdding(true)} />)}
-        {tab === 'expenses' && <Expenses family={family} api={api} loadTransactions={demo ? demoLoader : loadRiseup} />}
+        {tab === 'expenses' && <Expenses exp={exp} model={model} groups={groups || []} onSaveGroups={(g) => api.updateFamily({ expenseGroups: g })} />}
+        {tab === 'dash' && <Dashboards exp={exp} model={model} />}
         {tab === 'family' && <Family family={family} api={api} myEmail={user.email?.toLowerCase()} demo={demo} />}
       </main>
 

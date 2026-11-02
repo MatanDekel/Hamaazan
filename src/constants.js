@@ -1,9 +1,12 @@
 export const COMPANIES = ['הראל', 'מגדל', 'מנורה', 'כלל', 'הפניקס'];
+export const BROKERS = ['IBI', 'מיטב', 'אקסלנס', 'Interactive Brokers', 'לאומי', 'הפועלים', 'דיסקונט', 'מזרחי טפחות', 'הבינלאומי', 'אחר'];
+export const companiesFor = (kind) => (kind === 'stocks' ? BROKERS : COMPANIES);
 
 export const KINDS = {
   gemel: 'קופת גמל',
   pension: 'פנסיה',
   hishtalmut: 'קרן השתלמות',
+  stocks: 'תיק מניות',
 };
 export const kindOf = (f) => KINDS[f.kind] || KINDS.gemel;
 

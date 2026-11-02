@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { COMPANIES, KINDS, TRACKS, todayISO, uid } from './constants';
+import { COMPANIES, KINDS, TRACKS, companiesFor, todayISO, uid } from './constants';
 import { Modal } from './ui';
 
 export default function FundForm({ initial, owners, onSave, onClose }) {
@@ -11,6 +11,7 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
     currentBalance: '',
   });
   const [err, setErr] = useState('');
+  const isStocks = f.kind === 'stocks';
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
@@ -45,10 +46,15 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
       <form className="form" onSubmit={submit}>
         <label className="full">שם<input value={f.name} onChange={set('name')} placeholder="למשל: פנסיה של עדן" autoFocus /></label>
         <label>סוג החיסכון
-          <select value={f.kind} onChange={set('kind')}>{Object.entries(KINDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <select value={f.kind} onChange={(e) => {
+            const kind = e.target.value;
+            setF((s) => ({ ...s, kind, company: companiesFor(kind).includes(s.company) ? s.company : companiesFor(kind)[0] }));
+          }}>{Object.entries(KINDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         </label>
-        <label>חברה
-          <select value={f.company} onChange={set('company')}>{COMPANIES.map((c) => <option key={c}>{c}</option>)}</select>
+        <label>{isStocks ? 'בית השקעות / בנק' : 'חברה'}
+          <select value={f.company} onChange={set('company')}>
+            {[...new Set([...companiesFor(f.kind), f.company])].map((c) => <option key={c}>{c}</option>)}
+          </select>
         </label>
         <label>אצל מי
           <select value={f.owner} onChange={set('owner')}>{owners.map((o) => <option key={o}>{o}</option>)}</select>
@@ -61,8 +67,8 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
             <input type="number" min="0" value={f.currentBalance} onChange={set('currentBalance')} placeholder="לא חובה" />
           </label>
         )}
-        <label>דמי ניהול מהפקדה (%)<input type="number" min="0" step="0.01" value={f.feeDeposit} onChange={set('feeDeposit')} /></label>
-        <label>דמי ניהול מצבירה (% בשנה)<input type="number" min="0" step="0.01" value={f.feeBalance} onChange={set('feeBalance')} /></label>
+        <label>{isStocks ? 'עמלת קנייה מכל הפקדה (%)' : 'דמי ניהול מהפקדה (%)'}<input type="number" min="0" step="0.01" value={f.feeDeposit} onChange={set('feeDeposit')} /></label>
+        <label>{isStocks ? 'דמי ניהול / משמרת (% בשנה)' : 'דמי ניהול מצבירה (% בשנה)'}<input type="number" min="0" step="0.01" value={f.feeBalance} onChange={set('feeBalance')} /></label>
 
         <fieldset className="full">
           <legend>מסלול <span className={Math.round(sum) === 100 ? 'ok' : 'warn'}>{sum}%</span></legend>

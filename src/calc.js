@@ -77,6 +77,7 @@ export function analyzeFund(f) {
 
 const ilsFmt = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 });
 export const ils = (n) => (n == null || isNaN(n) ? '—' : ilsFmt.format(n));
-export const pct = (x, d = 1) => (x == null || isNaN(x) ? '—' : (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%');
+// \u200E שומר על הסימן בצד שמאל בתוך טקסט עברי
+export const pct = (x, d = 1) => (x == null || isNaN(x) ? '—' : '\u200E' + (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%');
 export const dateFmt = (s) => (s ? toDate(s).toLocaleDateString('he-IL') : '—');
 export const tone = (x) => (x == null ? '' : x > 0 ? 'up' : x < 0 ? 'down' : '');

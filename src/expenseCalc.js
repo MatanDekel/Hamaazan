@@ -13,6 +13,8 @@ export function monthsBack(n, end = new Date()) {
 const mDate = (m) => { const [y, mm] = m.split('-'); return new Date(+y, +mm - 1, 1); };
 export const monthShort = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'short' }).replace('׳', '').replace('.', '');
 export const monthLong = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+export const monthName = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long' });
+export const INCOME_COLORS = ['#2e7d4f', '#5aa36f', '#8cc08f', '#3f6f8f', '#7aa0b8'];
 
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 
@@ -34,11 +36,18 @@ export function buildModel(txs, groups, months) {
   const income = zero(), total = zero();
   const catStats = new Map();
   const tx = [];
+  const incomeCats = new Map();
 
   for (const t of txs) {
     const i = idx[t.month];
     if (i == null || t.excluded) continue;
-    if (t.income) { income[i] += t.amount; continue; }
+    if (t.income) {
+      income[i] += t.amount;
+      if (!incomeCats.has(t.category)) incomeCats.set(t.category, zero());
+      incomeCats.get(t.category)[i] += t.amount;
+      tx.push({ ...t, unit: 'income' });
+      continue;
+    }
     total[i] += t.amount;
     const cs = catStats.get(t.category) || { name: t.category, total: 0, count: 0 };
     cs.total += t.amount; cs.count++;
@@ -65,8 +74,14 @@ export function buildModel(txs, groups, months) {
     .sort((a, b) => b.sum - a.sum);
   list.forEach((u) => { if (!u.color) u.color = PALETTE[k++ % PALETTE.length]; });
 
+  const incomeList = [...incomeCats.entries()]
+    .map(([name, values], i) => ({ key: 'i:' + name, name, values, sum: sum(values), ...trend(values) }))
+    .sort((a, b) => b.sum - a.sum)
+    .map((u, i) => ({ ...u, color: INCOME_COLORS[i % INCOME_COLORS.length] }));
+
   return {
-    months, list, income, total, tx,
+    months, list, income, total, tx, incomeList,
+    incomeTrend: trend(income),
     totalTrend: trend(total),
     categories: [...catStats.values()].sort((a, b) => b.total - a.total),
   };
@@ -80,3 +95,6 @@ export function trend(values) {
   const avg = sum(full) / full.length;
   return { last, avg, change: avg > 0 ? last / avg - 1 : null };
 }
+
+// ממוצע של החודשים המלאים (בלי החודש הנוכחי)
+export const fullAvg = (values) => { const f = values.slice(0, -1); return f.length ? sum(f) / f.length : 0; };

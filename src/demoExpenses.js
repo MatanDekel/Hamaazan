@@ -39,6 +39,8 @@ export function demoTransactions(months) {
       }
     });
     txs.push({ id: `${m}-sal1`, date: `${m}-10`, month: m, business: 'משכורת', amount: 14800, income: true, category: 'משכורת', fixed: true, excluded: false });
+    if (mi % 3 === 1) txs.push({ id: `${m}-free`, date: `${m}-18`, month: m, business: 'חשבונית — פרויקט', amount: 2500 + Math.round(r() * 3000), income: true, category: 'פרילנס', fixed: false, excluded: false });
+    if (mi % 5 === 2) txs.push({ id: `${m}-ref`, date: `${m}-21`, month: m, business: 'החזר מס', amount: 600 + Math.round(r() * 900), income: true, category: 'החזרים', fixed: false, excluded: false });
     txs.push({ id: `${m}-sal2`, date: `${m}-10`, month: m, business: 'משכורת', amount: 12600, income: true, category: 'משכורת', fixed: true, excluded: false });
   });
   // החודש הנוכחי חלקי — עד היום

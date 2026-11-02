@@ -33,6 +33,12 @@ export const demoFamily = {
 
 export const demoFunds = [
   fund({
+    name: 'תיק מניות', kind: 'stocks', company: 'IBI', owner: 'איתי',
+    investedSoFar: 54000, opening: 61200, startDate: '2024-11-01', monthlyDeposit: 800,
+    feeDeposit: 0.07, feeBalance: 0.1, allocation: [{ track: 'sp500', pct: 60 }, { track: 'stocks', pct: 40 }],
+    quarters: [0.028, 0.045, -0.052, 0.081, 0.034, 0.021, 0.049, 0.03],
+  }),
+  fund({
     name: 'גמל להשקעה', kind: 'gemel', company: 'מגדל', owner: 'נועה',
     investedSoFar: 62000, opening: 68400, startDate: '2024-11-01', monthlyDeposit: 1000,
     feeDeposit: 0, feeBalance: 0.6, allocation: [{ track: 'sp500', pct: 100 }],

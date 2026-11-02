@@ -1,192 +1,131 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { buildModel, monthsBack, monthShort, monthLong, PALETTE, REST_COLOR } from './expenseCalc';
+import { useState } from 'react';
+import { monthLong, PALETTE, fullAvg } from './expenseCalc';
 import { ils, pct } from './calc';
 import { uid } from './constants';
 
-const RANGES = [6, 12, 24];
-const TOP = 6;
-
-export default function Expenses({ family, api, loadTransactions }) {
-  const [range, setRange] = useState(12);
-  const [txs, setTxs] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [view, setView] = useState({ name: 'dash' });
-  const months = useMemo(() => monthsBack(range), [range]);
-  const groups = family.expenseGroups || [];
-
-  const load = useCallback(async (force) => {
-    setLoading(true); setError('');
-    try { setTxs(await loadTransactions(months, force)); }
-    catch (e) { setError(e.message); }
-    setLoading(false);
-  }, [months, loadTransactions]);
-  useEffect(() => { load(false); }, [load]);
-
-  const model = useMemo(() => (txs ? buildModel(txs, groups, months) : null), [txs, groups, months]);
-  const saveGroups = (g) => api.updateFamily({ expenseGroups: g });
+export default function Expenses({ exp, model, groups, onSaveGroups }) {
+  const [mode, setMode] = useState('month');
+  const [sel, setSel] = useState(null);
 
   return (
     <section>
       <div className="toolbar">
-        <div className="seg" aria-label="טווח זמן">
-          {RANGES.map((r) => (
-            <button key={r} className={range === r ? 'on' : ''} onClick={() => setRange(r)}>{r} חודשים</button>
-          ))}
-        </div>
+        <h1 className="page-title">{mode === 'manage' ? 'קטגוריות עיליות' : 'הוצאות'}</h1>
         <div className="row">
-          <button className="btn ghost" onClick={() => load(true)} disabled={loading}>{loading ? 'טוען…' : 'רענון מ-RiseUp'}</button>
-          {view.name === 'manage'
-            ? <button className="btn primary" onClick={() => setView({ name: 'dash' })}>חזרה לדשבורד</button>
-            : <button className="btn primary" onClick={() => setView({ name: 'manage' })}>קטגוריות עיליות</button>}
+          <button className="btn ghost" onClick={exp.reload} disabled={exp.loading}>{exp.loading ? 'טוען…' : 'רענון מ-RiseUp'}</button>
+          {mode === 'manage'
+            ? <button className="btn primary" onClick={() => setMode('month')}>חזרה להוצאות</button>
+            : <button className="btn primary" onClick={() => setMode('manage')}>קטגוריות עיליות</button>}
         </div>
       </div>
 
-      {error && <div className="panel err-panel"><strong>לא הצלחנו לטעון את ההוצאות.</strong><p>{error}</p></div>}
-      {!model && !error && <p className="muted">טוען הוצאות מ-RiseUp…</p>}
-
-      {model && view.name === 'dash' && <Dashboard model={model} onOpen={(key) => setView({ name: 'unit', key })} onManage={() => setView({ name: 'manage' })} />}
-      {model && view.name === 'unit' && (
-        <UnitDetail model={model} unit={model.list.find((u) => u.key === view.key)} onBack={() => setView({ name: 'dash' })} />
-      )}
-      {model && view.name === 'manage' && <ManageGroups model={model} groups={groups} onSave={saveGroups} />}
+      <LoadState exp={exp} model={model} />
+      {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} />}
+      {model && mode === 'manage' && <ManageGroups model={model} groups={groups} onSave={onSaveGroups} />}
     </section>
   );
 }
 
-/* ---------- dashboard ---------- */
-
-function Dashboard({ model, onOpen, onManage }) {
-  const { months, list, total, income, totalTrend } = model;
-  const n = months.length;
-  if (!list.length) {
-    return <div className="empty"><h2>אין הוצאות בטווח הזה</h2><p>נסו טווח ארוך יותר, או רעננו את הנתונים מ-RiseUp.</p></div>;
-  }
-  const lastFull = months[n - 2];
-  const balance = income[n - 2] - total[n - 2];
-  const top = list.slice(0, TOP);
-  const rest = list.slice(TOP);
-  const series = [
-    ...top.map((u) => ({ key: u.key, name: u.name, color: u.color, values: u.values })),
-    ...(rest.length ? [{ key: 'rest', name: 'שאר', color: REST_COLOR, values: months.map((_, i) => rest.reduce((s, u) => s + u.values[i], 0)) }] : []),
-  ];
-  const ungrouped = list.filter((u) => !u.group).length;
-
-  return (
-    <>
-      <div className="headline">
-        <div className="big">
-          <span className="label">הוצאות ב{monthLong(lastFull)}</span>
-          <strong>{ils(total[n - 2])}</strong>
-          <span className={`delta ${totalTrend.change > 0 ? 'down' : 'up'}`}>
-            {totalTrend.change == null ? '' : `${pct(totalTrend.change)} מהממוצע החודשי (${ils(totalTrend.avg)})`}
-          </span>
-        </div>
-        <dl className="facts">
-          <div><dt>הכנסות באותו חודש</dt><dd>{ils(income[n - 2])}</dd></div>
-          <div><dt>{balance >= 0 ? 'נשאר' : 'גירעון'}</dt><dd className={balance >= 0 ? 'up' : 'down'}>{ils(Math.abs(balance))}</dd></div>
-          <div><dt>החודש עד כה</dt><dd>{ils(total[n - 1])}</dd></div>
-        </dl>
-      </div>
-
-      <div className="chart-block">
-        <h3>הוצאות לפי חודש</h3>
-        <StackedBars months={months} series={series} income={income} />
-      </div>
-
-      {ungrouped > 0 && (
-        <p className="hint">
-          {ungrouped} קטגוריות עוד לא משויכות לקטגוריה עילית. <button className="link" onClick={onManage}>לשיוך</button>
-        </p>
-      )}
-
-      <UnitTable rows={list} onOpen={onOpen} lastLabel={monthShort(lastFull)} />
-    </>
-  );
+export function LoadState({ exp, model }) {
+  if (exp.error) return <div className="panel err-panel"><strong>לא הצלחנו לטעון את הנתונים מ-RiseUp.</strong><p>{exp.error}</p></div>;
+  if (!model) return <p className="muted">טוען נתונים מ-RiseUp…</p>;
+  return null;
 }
 
-function UnitTable({ rows, onOpen, lastLabel }) {
+/* ---------- month view ---------- */
+
+function MonthPicker({ months, month, onChange }) {
+  const i = months.indexOf(month);
+  const last = months.length - 1;
+  const today = new Date();
   return (
-    <div className="table-wrap">
-      <table className="units">
-        <thead>
-          <tr><th>קטגוריה</th><th>מגמה</th><th>{lastLabel}</th><th>ממוצע לחודש</th><th>מול הממוצע</th></tr>
-        </thead>
-        <tbody>
-          {rows.map((u) => (
-            <tr key={u.key || u.name} className={onOpen ? 'clickable' : ''} onClick={onOpen ? () => onOpen(u.key) : undefined}
-              tabIndex={onOpen ? 0 : undefined} onKeyDown={onOpen ? (e) => e.key === 'Enter' && onOpen(u.key) : undefined}>
-              <td>
-                <span className="unit-name"><i style={{ background: u.color }} />{u.name}</span>
-                {u.group && <span className="unit-sub">{u.cats.length} קטגוריות</span>}
-              </td>
-              <td><Sparkline values={u.values} color={u.color} /></td>
-              <td className="num">{ils(u.last)}</td>
-              <td className="num muted">{ils(u.avg)}</td>
-              <td className={`num ${u.change > 0.1 ? 'down' : u.change < -0.1 ? 'up' : 'muted'}`}>{pct(u.change, 0)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="month-picker">
+      <button className="btn ghost" disabled={i <= 0} onClick={() => onChange(months[i - 1])} aria-label="חודש קודם">→</button>
+      <div className="mp-label">
+        <select value={month} onChange={(e) => onChange(e.target.value)} aria-label="בחירת חודש">
+          {[...months].reverse().map((m) => <option key={m} value={m}>{monthLong(m)}</option>)}
+        </select>
+        <span className="mp-sub">{i === last ? `החודש הנוכחי — נכון ל-${today.getDate()}.${today.getMonth() + 1}` : 'חודש מלא'}</span>
+      </div>
+      <button className="btn ghost" disabled={i >= last} onClick={() => onChange(months[i + 1])} aria-label="חודש הבא">←</button>
     </div>
   );
 }
 
-/* ---------- unit detail ---------- */
+function MonthView({ model, sel, setSel, onManage }) {
+  const { months, list, total, income } = model;
+  const month = sel && months.includes(sel) ? sel : months[months.length - 2];
+  const i = months.indexOf(month);
+  const [open, setOpen] = useState(null);
 
-function UnitDetail({ model, unit, onBack }) {
-  const { months } = model;
-  const withData = months.filter((m, i) => unit && unit.values[i] > 0);
-  const [month, setMonth] = useState(withData[withData.length - 1]);
-  if (!unit) return <button className="link back" onClick={onBack}>חזרה לדשבורד</button>;
-
-  const series = unit.cats.length > 1
-    ? unit.cats.map((c, i) => ({ key: c.name, name: c.name, color: PALETTE[i % PALETTE.length], values: c.values }))
-    : [{ key: unit.key, name: unit.name, color: unit.color, values: unit.values }];
-  const cats = unit.cats.map((c, i) => ({ ...c, color: series[i]?.color || unit.color }));
-  const list = model.tx.filter((t) => t.unit === unit.key && t.month === month).sort((a, b) => b.date.localeCompare(a.date));
+  const spent = total[i];
+  const earned = income[i];
+  const avgSpent = fullAvg(total);
+  const rows = list.filter((u) => u.values[i] > 0).sort((a, b) => b.values[i] - a.values[i]);
+  const ungrouped = list.filter((u) => !u.group).length;
+  const isCurrent = i === months.length - 1;
 
   return (
-    <div className="detail">
-      <button className="link back" onClick={onBack}>חזרה לדשבורד</button>
-      <header className="detail-head">
+    <>
+      <MonthPicker months={months} month={month} onChange={(m) => { setSel(m); setOpen(null); }} />
+
+      <dl className="month-summary">
+        <div><dt>הוצאות ב{monthLong(month)}</dt><dd>{ils(spent)}</dd></div>
+        <div><dt>הכנסות ב{monthLong(month)}</dt><dd>{ils(earned)}</dd></div>
+        <div><dt>{earned - spent >= 0 ? 'נשאר' : 'גירעון'}</dt><dd className={earned - spent >= 0 ? 'up' : 'down'}>{ils(Math.abs(earned - spent))}</dd></div>
         <div>
-          <h1>{unit.name}</h1>
-          {unit.group && <p className="meta">{unit.cats.map((c) => c.name).join(', ')}</p>}
+          <dt>מול הממוצע החודשי</dt>
+          <dd className={isCurrent ? 'muted' : spent > avgSpent ? 'down' : 'up'}>{isCurrent ? 'חודש לא שלם' : pct(avgSpent ? spent / avgSpent - 1 : null, 0)}</dd>
         </div>
-      </header>
-      <dl className="stats">
-        <div><dt>חודש שעבר</dt><dd>{ils(unit.last)}</dd></div>
-        <div><dt>ממוצע לחודש</dt><dd>{ils(unit.avg)}</dd></div>
-        <div><dt>מול הממוצע</dt><dd className={unit.change > 0 ? 'down' : 'up'}>{pct(unit.change, 0)}</dd></div>
-        <div><dt>סה״כ בטווח</dt><dd>{ils(unit.sum)}</dd></div>
       </dl>
 
-      <div className="chart-block">
-        <StackedBars months={months} series={series} avg={unit.avg} />
-      </div>
-
-      {unit.cats.length > 1 && (
-        <>
-          <h2 className="sec">קטגוריות בתוך {unit.name}</h2>
-          <UnitTable rows={cats} lastLabel={monthShort(months[months.length - 2])} />
-        </>
+      {ungrouped > 0 && (
+        <p className="hint">{ungrouped} קטגוריות עוד לא משויכות לקטגוריה עילית. <button className="link" onClick={onManage}>לשיוך</button></p>
       )}
 
-      <h2 className="sec">עסקאות</h2>
-      <div className="chips month-chips">
-        {withData.map((m) => (
-          <button key={m} className={m === month ? 'on' : ''} onClick={() => setMonth(m)}>{monthShort(m)} {m.slice(2, 4)}</button>
-        ))}
-      </div>
+      <h2 className="sec">לאן הלך הכסף ב{monthLong(month)}</h2>
+      {!rows.length && <p className="muted">אין הוצאות בחודש הזה.</p>}
+      <ul className="month-cats">
+        {rows.map((u) => {
+          const v = u.values[i];
+          const change = u.avg ? v / u.avg - 1 : null;
+          const isOpen = open === u.key;
+          return (
+            <li key={u.key} className={isOpen ? 'open' : ''}>
+              <button className="mc-row" onClick={() => setOpen(isOpen ? null : u.key)} aria-expanded={isOpen}>
+                <span className="unit-name"><i style={{ background: u.color }} />{u.name}</span>
+                <span className="mc-bar"><i style={{ width: `${(v / spent) * 100}%`, background: u.color }} /></span>
+                <span className="num mc-amt">{ils(v)}</span>
+                <span className={`num mc-chg ${isCurrent || change == null || Math.abs(change) <= 0.1 ? 'muted' : change > 0 ? 'down' : 'up'}`}>
+                  {isCurrent ? `${Math.round((v / spent) * 100)}%` : `${pct(change, 0)} מהממוצע`}
+                </span>
+              </button>
+              {isOpen && <MonthUnit model={model} unit={u} i={i} month={month} />}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function MonthUnit({ model, unit, i, month }) {
+  const tx = model.tx.filter((t) => t.unit === unit.key && t.month === month).sort((a, b) => b.amount - a.amount);
+  const subs = unit.cats.filter((c) => c.values[i] > 0).sort((a, b) => b.values[i] - a.values[i]);
+  return (
+    <div className="mc-detail">
+      {unit.cats.length > 1 && (
+        <ul className="mc-subs">
+          {subs.map((c) => <li key={c.name}><span>{c.name}</span><span className="num">{ils(c.values[i])}</span><span className="num muted">ממוצע {ils(c.avg)}</span></li>)}
+        </ul>
+      )}
       <ul className="tx-list">
-        {list.map((t) => (
+        {tx.map((t) => (
           <li key={t.id}>
             <span className="tx-biz">{t.business}<small>{t.date.split('-').reverse().join('/')}{unit.cats.length > 1 ? ` · ${t.category}` : ''}{t.fixed ? ' · קבועה' : ''}</small></span>
             <span className="num">{ils(t.amount)}</span>
           </li>
         ))}
-        {!list.length && <li className="muted">אין עסקאות בחודש הזה.</li>}
       </ul>
     </div>
   );
@@ -218,7 +157,7 @@ function ManageGroups({ model, groups, onSave }) {
   return (
     <div className="manage">
       <div className="panel">
-        <h2>קטגוריות עיליות</h2>
+        <h2>הקטגוריות העיליות שלך</h2>
         <p className="muted">קטגוריה עילית מאגדת כמה קטגוריות מ-RiseUp, למשל "אוכל" שכוללת סופר, מסעדות ומשלוחים.</p>
         <ul className="group-list">
           {groups.map((g, i) => (
@@ -237,10 +176,10 @@ function ManageGroups({ model, groups, onSave }) {
       </div>
 
       <div className="panel">
-        <h2>שיוך הקטגוריות שלך מ-RiseUp</h2>
+        <h2>שיוך הקטגוריות מ-RiseUp</h2>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>קטגוריה ב-RiseUp</th><th>בטווח</th><th>קטגוריה עילית</th></tr></thead>
+            <thead><tr><th>קטגוריה ב-RiseUp</th><th>סה״כ בטווח</th><th>קטגוריה עילית</th></tr></thead>
             <tbody>
               {allCats.map((c) => (
                 <tr key={c}>
@@ -259,50 +198,5 @@ function ManageGroups({ model, groups, onSave }) {
         </div>
       </div>
     </div>
-  );
-}
-
-/* ---------- charts ---------- */
-
-function StackedBars({ months, series, income, avg }) {
-  const totals = months.map((_, i) => series.reduce((s, x) => s + x.values[i], 0));
-  const max = Math.max(...totals, ...(income || [0]), avg || 0, 1);
-  const last = months.length - 1;
-  return (
-    <div className="sbars-wrap">
-      <div className="sbars" dir="ltr">
-        {avg > 0 && <div className="sbar-avg" style={{ '--p': avg / max }}><span>ממוצע {ils(avg)}</span></div>}
-        {months.map((m, i) => (
-          <div key={m} className={`sbar-col${i === last ? ' partial' : ''}`}>
-            <div className="sbar-stack" title={`${monthLong(m)}: ${ils(totals[i])}${i === last ? ' (עד כה)' : ''}`}>
-              {series.map((s) => s.values[i] > 0 && (
-                <span key={s.key} style={{ height: `${(s.values[i] / max) * 100}%`, background: s.color }} title={`${s.name}: ${ils(s.values[i])}`} />
-              ))}
-              {income && income[i] > 0 && <i className="sbar-income" style={{ bottom: `${(income[i] / max) * 100}%` }} title={`הכנסות: ${ils(income[i])}`} />}
-            </div>
-            <span className="sbar-label">{monthShort(m)}</span>
-          </div>
-        ))}
-      </div>
-      <div className="alloc-legend">
-        {series.map((s) => <span key={s.key}><i style={{ background: s.color }} />{s.name}</span>)}
-        {income && <span><i className="lg-income" />הכנסות</span>}
-        <span className="muted">החודש הנוכחי חלקי</span>
-      </div>
-    </div>
-  );
-}
-
-function Sparkline({ values, color }) {
-  const W = 96, H = 26;
-  const v = values.slice(0, -1); // בלי החודש החלקי
-  if (v.length < 2) return null;
-  const max = Math.max(...v, 1);
-  const pts = v.map((x, i) => [(i / (v.length - 1)) * (W - 4) + 2, H - 3 - (x / max) * (H - 6)]);
-  return (
-    <svg className="spark" width={W} height={H} viewBox={`0 0 ${W} ${H}`} dir="ltr" aria-hidden="true">
-      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" />
-      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.5" fill={color} />
-    </svg>
   );
 }
