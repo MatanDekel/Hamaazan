@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function myEmail() { return request.auth.token.email.lower(); }
+    function isMember(fid) {
+      return request.auth != null &&
+        myEmail() in get(/databases/$(database)/documents/families/$(fid)).data.memberEmails;
+    }
+
+    match /families/{fid} {
+      allow read: if request.auth != null && myEmail() in resource.data.memberEmails;
+      allow create: if request.auth != null && myEmail() in request.resource.data.memberEmails;
+      // חבר משפחה יכול לעדכן, אבל לא להסיר את עצמו
+      allow update: if request.auth != null
+        && myEmail() in resource.data.memberEmails
+        && myEmail() in request.resource.data.memberEmails;
+      allow delete: if false;
+
+      match /funds/{fundId} {
+        allow read, write: if isMember(fid);
+      }
+      match /expenses/{expenseId} {
+        allow read, write: if isMember(fid);
+      }
+    }
+  }
+}
