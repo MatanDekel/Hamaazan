@@ -1,9 +1,9 @@
 :root {
   /* לבן, ירוק עתיק, חום, חמרה, כתום */
-  --bg: #faf7f2; --surface: #ffffff; --ink: #3b2a20; --ink-2: #6e5848; --ink-3: #a08c7c;
-  --line: #ebe2d7; --accent: #5e7a5b; --accent-ink: #fff; --accent-soft: rgba(94, 122, 91, .13);
-  --up: #5e7a5b; --down: #b5573a; --warn: #c97a1e;
-  --t-stocks: #5e7a5b; --t-sp: #d98b2b; --t-solid: #8a6a50;
+  --bg: #faf7f2; --surface: #ffffff; --ink: #5a4434; --ink-2: #806a5a; --ink-3: #ab998b;
+  --line: #ede5db; --accent: #5e7a5b; --accent-ink: #fff; --accent-soft: rgba(94, 122, 91, .13);
+  --up: #5e7a5b; --down: #c0603f; --warn: #d4862a;
+  --t-stocks: #5e7a5b; --t-sp: #e39a45; --t-solid: #c8ad94;
   --serif: 'Rubik', 'Assistant', 'Segoe UI', Arial, sans-serif;
   --sans: 'Assistant', 'Segoe UI', Arial, sans-serif;
   color-scheme: light;
