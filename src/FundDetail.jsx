@@ -9,9 +9,21 @@ export default function FundDetail({ fund, family, api, onBack }) {
   const [editing, setEditing] = useState(false);
   const [snap, setSnap] = useState({ date: todayISO(), balance: '', deposits: '' });
   const [err, setErr] = useState('');
+  const [lump, setLump] = useState({ date: todayISO(), amount: '' });
+  const lumps = [...(fund.lumpSums || [])].sort((a, b) => b.date.localeCompare(a.date));
+  const addLump = async (e) => {
+    e.preventDefault();
+    if (!(+lump.amount > 0)) return;
+    await api.updateFund(fund.id, { lumpSums: [...(fund.lumpSums || []), { id: uid(), date: lump.date, amount: +lump.amount }] });
+    setLump({ date: todayISO(), amount: '' });
+  };
+  const removeLump = (id) => confirm('למחוק את ההפקדה הזו?') && api.updateFund(fund.id, { lumpSums: fund.lumpSums.filter((l) => l.id !== id) });
 
   const last = a.rows[a.rows.length - 1];
-  const autoDeposits = last && snap.date > last.date ? monthsBetween(last.date, snap.date) * (+fund.monthlyDeposit || 0) : 0;
+  const autoDeposits = last && snap.date > last.date
+    ? monthsBetween(last.date, snap.date) * (+fund.monthlyDeposit || 0)
+      + (fund.lumpSums || []).filter((l) => l.date > last.date && l.date <= snap.date).reduce((t, l) => t + +l.amount, 0)
+    : 0;
 
   const addSnap = async (e) => {
     e.preventDefault();
@@ -46,7 +58,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
       <header className="detail-head">
         <div>
           <h1>{fund.name}</h1>
-          <p className="meta">{kindOf(fund)} · {fund.company} · אצל {fund.owner} · דמי ניהול {fund.feeDeposit || 0}% מהפקדה, {fund.feeBalance || 0}% מצבירה</p>
+          <p className="meta">{kindOf(fund)} · {fund.company} · {fund.shared ? `משותף, רשום על שם ${fund.owner}` : `אצל ${fund.owner}`} · דמי ניהול {fund.feeDeposit || 0}% מהפקדה, {fund.feeBalance || 0}% מצבירה</p>
           <AllocationBar allocation={fund.allocation} showLegend />
         </div>
         <div className="detail-actions">
@@ -76,6 +88,22 @@ export default function FundDetail({ fund, family, api, onBack }) {
         </label>
         <button className="btn primary">שמירת עדכון</button>
         {err && <p className="err">{err}</p>}
+      </form>
+
+      <form className="snap-form lump-form" onSubmit={addLump}>
+        <h2>הפקדה חד-פעמית</h2>
+        <label>תאריך<input type="date" value={lump.date} onChange={(e) => setLump({ ...lump, date: e.target.value })} /></label>
+        <label>סכום (₪)<input type="number" min="0" value={lump.amount} onChange={(e) => setLump({ ...lump, amount: e.target.value })} /></label>
+        <button className="btn ghost">הוספת הפקדה</button>
+        {lumps.length > 0 && (
+          <ul className="lump-list">
+            {lumps.map((l) => (
+              <li key={l.id}><span>{dateFmt(l.date)}</span><span className="num">{ils(l.amount)}</span>
+                <button type="button" className="icon-btn" onClick={() => removeLump(l.id)} aria-label="מחיקת הפקדה">✕</button></li>
+            ))}
+          </ul>
+        )}
+        <p className="footnote">נכנסת לחישוב התשואה ולתקרת ההפקדה השנתית. אם כבר הזנת הפקדות בפועל בעדכון יתרה, אל תוסיפי אותן גם כאן.</p>
       </form>
 
       {a.rows.length > 0 && (

@@ -25,3 +25,7 @@ export const todayISO = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
+
+export const DEFAULT_CAP = 84000;
+// סוגי חיסכון שנספרים בתקרת ההפקדה השנתית (גמל להשקעה)
+export const CAPPED_KINDS = ['gemel'];

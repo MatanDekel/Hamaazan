@@ -30,9 +30,11 @@ export function analyzeFund(f) {
 
   const rows = [];
   let cum = 1, fees = 0;
+  const lumps = f.lumpSums || [];
+  const lumpBetween = (a, b) => lumps.filter((l) => l.date > a && l.date <= b).reduce((t, l) => t + num(l.amount), 0);
   let principal = snaps.length
-    ? invested + monthsBetween(start, snaps[0].date) * monthly
-    : invested + monthsBetween(start, todayISO()) * monthly;
+    ? invested + monthsBetween(start, snaps[0].date) * monthly + lumpBetween(start, snaps[0].date)
+    : invested + monthsBetween(start, todayISO()) * monthly + lumpBetween(start, todayISO());
 
   snaps.forEach((s, i) => {
     const bal = num(s.balance);
@@ -44,7 +46,7 @@ export function analyzeFund(f) {
     const days = (toDate(s.date) - toDate(p.date)) / DAY;
     const yf = days / 365;
     const manual = s.deposits !== '' && s.deposits != null;
-    const gross = manual ? num(s.deposits) : monthsBetween(p.date, s.date) * monthly;
+    const gross = manual ? num(s.deposits) : monthsBetween(p.date, s.date) * monthly + lumpBetween(p.date, s.date);
     const depFee = gross * fd;
     const net = gross - depFee;
     const balFee = ((p.balance + bal) / 2) * fb * yf;
@@ -81,3 +83,9 @@ export const ils = (n) => (n == null || isNaN(n) ? '—' : ilsFmt.format(n));
 export const pct = (x, d = 1) => (x == null || isNaN(x) ? '—' : '\u200E' + (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%');
 export const dateFmt = (s) => (s ? toDate(s).toLocaleDateString('he-IL') : '—');
 export const tone = (x) => (x == null ? '' : x > 0 ? 'up' : x < 0 ? 'down' : '');
+
+// הפקדות מתוכננות לשנה קלנדרית: הפקדה חודשית × 12 + הפקדות חד-פעמיות באותה שנה
+export function yearDeposits(f, year) {
+  const lumps = (f.lumpSums || []).filter((l) => l.date.startsWith(String(year))).reduce((t, l) => t + num(l.amount), 0);
+  return { monthly: num(f.monthlyDeposit) * 12, lumps, total: num(f.monthlyDeposit) * 12 + lumps };
+}

@@ -5,7 +5,7 @@ import { Modal } from './ui';
 export default function FundForm({ initial, owners, onSave, onClose }) {
   const isNew = !initial;
   const [f, setF] = useState(() => initial ? { kind: 'gemel', ...initial } : {
-    name: '', kind: 'gemel', company: COMPANIES[0], owner: owners[0] || '',
+    name: '', kind: 'gemel', shared: false, company: COMPANIES[0], owner: owners[0] || '',
     investedSoFar: '', startDate: todayISO(), monthlyDeposit: '',
     feeDeposit: '', feeBalance: '', allocation: [{ track: 'sp500', pct: 100 }],
     currentBalance: '',
@@ -25,7 +25,7 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
     if (!f.name.trim()) return setErr('צריך לתת לחיסכון שם.');
     if (Math.round(sum) !== 100) return setErr(`חלוקת המסלולים צריכה להסתכם ב-100%. כרגע: ${sum}%.`);
     const data = {
-      name: f.name.trim(), kind: f.kind, company: f.company, owner: f.owner,
+      name: f.name.trim(), kind: f.kind, shared: !!f.shared, company: f.company, owner: f.owner,
       investedSoFar: +f.investedSoFar || 0, startDate: f.startDate || todayISO(),
       monthlyDeposit: +f.monthlyDeposit || 0,
       feeDeposit: +f.feeDeposit || 0, feeBalance: +f.feeBalance || 0,
@@ -56,8 +56,12 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
             {[...new Set([...companiesFor(f.kind), f.company])].map((c) => <option key={c}>{c}</option>)}
           </select>
         </label>
-        <label>אצל מי
+        <label>{f.shared ? 'רשום על שם' : 'אצל מי'}
           <select value={f.owner} onChange={set('owner')}>{owners.map((o) => <option key={o}>{o}</option>)}</select>
+        </label>
+        <label className="check full">
+          <input type="checkbox" checked={!!f.shared} onChange={(e) => setF((s) => ({ ...s, shared: e.target.checked }))} />
+          <span>חיסכון משותף<small>{f.shared ? `רשום על שם ${f.owner || '—'}, והשני מוטב` : 'רשום ושייך רק למי שנבחר ב"אצל מי"'}</small></span>
         </label>
         <label>כמה הופקד עד היום (₪)<input type="number" min="0" value={f.investedSoFar} onChange={set('investedSoFar')} /></label>
         <label>נכון לתאריך<input type="date" value={f.startDate} onChange={set('startDate')} /></label>

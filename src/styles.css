@@ -295,3 +295,29 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
   .rec-money { grid-row: 2; grid-column: 2; align-items: flex-end; }
   .rec-actions { grid-row: 1; grid-column: 2; justify-content: flex-end; }
 }
+
+/* shared + cap */
+.tag { display: inline-block; font-size: .72rem; font-weight: 700; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: .05rem .5rem; margin-inline-start: .4rem; vertical-align: 1px; }
+.form label.check { flex-direction: row; align-items: flex-start; gap: .6rem; cursor: pointer; }
+.form label.check input { width: auto; margin-top: .2rem; accent-color: var(--accent); }
+.form label.check span { display: flex; flex-direction: column; color: var(--ink); }
+.form label.check small { font-weight: 400; color: var(--ink-3); }
+.cap { margin: 1.75rem 0 .5rem; padding: 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.cap-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.cap-head h3 { margin: 0; color: var(--ink); font-size: 1.05rem; }
+.cap-input { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--ink-2); }
+.cap-input input { width: 7.5rem; padding: .35rem .5rem; }
+.cap > p { margin: .4rem 0 1rem; font-size: .88rem; }
+.cap-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.25rem; }
+.cap-line { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .35rem; }
+.cap-bar { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
+.cap-bar i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+.cap-bar i.over { background: var(--down); }
+.cap-left { font-size: .88rem; margin-top: .3rem; font-weight: 600; }
+.cap-parts { list-style: none; padding: 0; margin: .5rem 0 0; font-size: .85rem; display: grid; gap: .2rem; }
+.cap-parts li { display: flex; justify-content: space-between; gap: 1rem; }
+.lump-form { grid-template-columns: 1fr 1fr auto; }
+.lump-list, .lump-form .footnote { grid-column: 1 / -1; }
+.lump-list { list-style: none; padding: 0; margin: .25rem 0 0; display: grid; gap: .25rem; }
+.lump-list li { display: flex; gap: 1rem; align-items: center; font-size: .9rem; }
+.lump-list .num { margin-inline-start: auto; font-weight: 700; }

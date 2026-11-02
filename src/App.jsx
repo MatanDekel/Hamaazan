@@ -93,7 +93,7 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
       <main className="content">
         {tab === 'invest' && (open
           ? <FundDetail fund={open} family={family} api={api} onBack={() => setOpenId(null)} />
-          : <Investments funds={funds} family={family} onOpen={setOpenId} onAdd={() => setAdding(true)} />)}
+          : <Investments funds={funds} family={family} api={api} onOpen={setOpenId} onAdd={() => setAdding(true)} />)}
         {tab === 'expenses' && <Expenses exp={exp} model={model} groups={groups || []} onSaveGroups={(g) => api.updateFamily({ expenseGroups: g })}
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}

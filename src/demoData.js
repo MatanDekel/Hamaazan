@@ -4,13 +4,15 @@ import { demoGroups } from './demoExpenses';
 const iso = (d) => d.toISOString().slice(0, 10);
 const addMonths = (d, m) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + m, d.getUTCDate()));
 
-function history({ startDate: start, opening, monthlyDeposit: monthly, feeDeposit, feeBalance, quarters }) {
+function history({ startDate: start, opening, monthlyDeposit: monthly, feeDeposit, feeBalance, quarters, lumpSums = [] }) {
   let d = new Date(start + 'T00:00:00Z');
   let bal = opening;
   const snaps = [{ id: uid(), date: iso(d), balance: Math.round(bal) }];
   for (const q of quarters) {
     for (let m = 0; m < 3; m++) {
-      bal = bal * (1 + q / 3) - (bal * feeBalance) / 100 / 12 + monthly * (1 - feeDeposit / 100);
+      const a = iso(addMonths(d, m)), b = iso(addMonths(d, m + 1));
+      const lump = lumpSums.filter((l) => l.date > a && l.date <= b).reduce((t, l) => t + l.amount, 0);
+      bal = bal * (1 + q / 3) - (bal * feeBalance) / 100 / 12 + (monthly + lump) * (1 - feeDeposit / 100);
     }
     d = addMonths(d, 3);
     snaps.push({ id: uid(), date: iso(d), balance: Math.round(bal) });
@@ -50,7 +52,7 @@ export const demoFunds = [
     quarters: [0.028, 0.045, -0.052, 0.081, 0.034, 0.021, 0.049, 0.03],
   }),
   fund({
-    name: 'גמל להשקעה', kind: 'gemel', company: 'מגדל', owner: 'נועה',
+    name: 'גמל להשקעה', kind: 'gemel', shared: true, company: 'מגדל', owner: 'נועה',
     investedSoFar: 62000, opening: 68400, startDate: '2024-11-01', monthlyDeposit: 1000,
     feeDeposit: 0, feeBalance: 0.6, allocation: [{ track: 'sp500', pct: 100 }],
     quarters: [0.024, 0.041, -0.031, 0.062, 0.035, 0.018, 0.044, 0.027],
@@ -62,7 +64,7 @@ export const demoFunds = [
     quarters: [0.019, 0.028, -0.012, 0.041, 0.022, 0.015, 0.031, 0.02],
   }),
   fund({
-    name: 'חיסכון לדירה', kind: 'gemel', company: 'כלל', owner: 'איתי',
+    name: 'חיסכון לדירה', kind: 'gemel', shared: true, lumpSums: [{ id: 'l1', date: `${new Date().getFullYear()}-03-15`, amount: 20000 }], company: 'כלל', owner: 'איתי',
     investedSoFar: 40000, opening: 41900, startDate: '2024-11-01', monthlyDeposit: 2000,
     feeDeposit: 1, feeBalance: 0.45, allocation: [{ track: 'sp500', pct: 50 }, { track: 'solid', pct: 50 }],
     quarters: [0.011, 0.02, -0.008, 0.029, 0.017, 0.012, 0.021, 0.014],
