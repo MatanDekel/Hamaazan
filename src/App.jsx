@@ -43,18 +43,18 @@ export default function App() {
   if (user === undefined) return <Loading />;
   if (!user) return <Login onGoogle={google} onDemo={() => setDemo(true)} error={error} busy={busy} firebaseReady={firebaseReady} />;
   if (!familyId) return error ? <Login onGoogle={google} onDemo={() => setDemo(true)} error={error} firebaseReady /> : <Loading />;
-  return <LiveShell familyId={familyId} user={user} onLogout={() => signOut(auth)} />;
+  return <LiveShell familyId={familyId} user={user} onLogout={() => signOut(auth)} onDemo={() => setDemo(true)} />;
 }
 
 function Loading() {
   return <main className="loading"><span className="wordmark small">המאזן</span></main>;
 }
 
-function LiveShell({ familyId, user, onLogout }) {
+function LiveShell({ familyId, user, onLogout, onDemo }) {
   const data = useLiveData(familyId);
   if (data.error) return <main className="loading"><p className="err">{data.error}</p></main>;
   if (!data.family || !data.funds) return <Loading />;
-  return <Shell {...data} user={user} onLogout={onLogout} />;
+  return <Shell {...data} user={user} onLogout={onLogout} onDemo={onDemo} />;
 }
 
 function DemoShell({ onLogout }) {
@@ -62,14 +62,14 @@ function DemoShell({ onLogout }) {
   return <Shell {...data} demo user={{ displayName: 'אורח', email: 'noa@example.com' }} onLogout={onLogout} />;
 }
 
-function Shell({ family, funds, api, user, demo, onLogout }) {
+function Shell({ family, funds, api, user, demo, onLogout, onDemo }) {
   const [tab, setTab] = useState('invest');
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
   const open = funds.find((f) => f.id === openId);
   const exp = useExpenseData(demo ? demoLoader : loadRiseup, tab === 'expenses' || tab === 'dash');
   const groups = family.expenseGroups;
-  const model = useMemo(() => (exp.txs ? buildModel(exp.txs, groups || [], exp.months) : null), [exp.txs, groups, exp.months]);
+  const model = useMemo(() => (exp.txs ? buildModel(exp.txs, groups || [], exp.months, family.categoryNames || {}) : null), [exp.txs, groups, exp.months, family.categoryNames]);
 
   const go = (t) => { setTab(t); setOpenId(null); };
 
@@ -86,6 +86,7 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
         </nav>
         <div className="me">
           <span className="fam-name">{family.name}</span>
+          {!demo && onDemo && <button className="link" onClick={onDemo}>צפייה בהדגמה</button>}
           <button className="link" onClick={onLogout}>{demo ? 'יציאה מההדגמה' : 'התנתקות'}</button>
         </div>
       </header>
@@ -95,6 +96,7 @@ function Shell({ family, funds, api, user, demo, onLogout }) {
           ? <FundDetail fund={open} family={family} api={api} onBack={() => setOpenId(null)} />
           : <Investments funds={funds} family={family} api={api} onOpen={setOpenId} onAdd={() => setAdding(true)} />)}
         {tab === 'expenses' && <Expenses exp={exp} model={model} groups={groups || []} onSaveGroups={(g) => api.updateFamily({ expenseGroups: g })}
+          categoryNames={family.categoryNames || {}} onRenameCategory={(names, g) => api.updateFamily({ categoryNames: names, expenseGroups: g })}
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}
         {tab === 'family' && <Family family={family} api={api} myEmail={user.email?.toLowerCase()} demo={demo} />}

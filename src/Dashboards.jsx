@@ -126,10 +126,11 @@ function Filtered({ model, unit, sub, onSub }) {
   const allSpent = model.total.reduce((a, b) => a + b, 0);
 
   // בתי העסק שבהם הוצא הכי הרבה בסינון הזה
+  const [openM, setOpenM] = useState(null);
   const merchants = {};
   model.tx.filter((t) => t.unit === unit.key && (!cat || t.category === cat.name)).forEach((t) => {
-    const m = merchants[t.business] || (merchants[t.business] = { name: t.business, total: 0, count: 0 });
-    m.total += t.amount; m.count++;
+    const m = merchants[t.business] || (merchants[t.business] = { name: t.business, total: 0, count: 0, tx: [] });
+    m.total += t.amount; m.count++; m.tx.push(t);
   });
   const topMerchants = Object.values(merchants).sort((a, b) => b.total - a.total).slice(0, 8);
 
@@ -158,10 +159,22 @@ function Filtered({ model, unit, sub, onSub }) {
           <h2 className="sec">איפה הוצאת הכי הרבה</h2>
           <ul className="merchants">
             {topMerchants.map((m) => (
-              <li key={m.name}>
-                <span>{m.name}<small>{m.count} עסקאות</small></span>
-                <span className="mc-bar"><i style={{ width: `${(m.total / topMerchants[0].total) * 100}%`, background: unit.color }} /></span>
-                <span className="num">{ils(m.total)}</span>
+              <li key={m.name} className={openM === m.name ? 'open' : ''}>
+                <button className="m-row" onClick={() => setOpenM(openM === m.name ? null : m.name)} aria-expanded={openM === m.name}>
+                  <span>{m.name}<small>{m.count} עסקאות · לחצו לפירוט</small></span>
+                  <span className="mc-bar"><i style={{ width: `${(m.total / topMerchants[0].total) * 100}%`, background: unit.color }} /></span>
+                  <span className="num">{ils(m.total)}</span>
+                </button>
+                {openM === m.name && (
+                  <ul className="tx-list m-tx">
+                    {[...m.tx].sort((a, b) => b.date.localeCompare(a.date)).map((t) => (
+                      <li key={t.id}>
+                        <span className="tx-biz">{t.date.split('-').reverse().join('/')}<small>{t.category}{t.fixed ? ' · קבועה' : ''}</small></span>
+                        <span className="num">{ils(t.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

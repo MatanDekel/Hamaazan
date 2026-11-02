@@ -4,7 +4,7 @@ import { ils, pct } from './calc';
 import { uid } from './constants';
 import Recurring from './Recurring';
 
-export default function Expenses({ exp, model, groups, onSaveGroups, recurring, onSaveRecurring }) {
+export default function Expenses({ exp, model, groups, onSaveGroups, recurring, onSaveRecurring, categoryNames, onRenameCategory }) {
   const [mode, setMode] = useState('month');
   const [sel, setSel] = useState(null);
 
@@ -22,7 +22,7 @@ export default function Expenses({ exp, model, groups, onSaveGroups, recurring, 
 
       <LoadState exp={exp} model={model} />
       {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} />}
-      {model && mode === 'manage' && <ManageGroups model={model} groups={groups} onSave={onSaveGroups} />}
+      {model && mode === 'manage' && <ManageGroups model={model} groups={groups} onSave={onSaveGroups} names={categoryNames} onRename={onRenameCategory} />}
       {mode === 'month' && <Recurring items={recurring} onSave={onSaveRecurring} />}
     </section>
   );
@@ -135,7 +135,18 @@ function MonthUnit({ model, unit, i, month }) {
 
 /* ---------- manage groups ---------- */
 
-function ManageGroups({ model, groups, onSave }) {
+function ManageGroups({ model, groups, onSave, names, onRename }) {
+  // שינוי שם: שומרים מיפוי משם המקור ב-RiseUp לשם החדש, ומעדכנים גם את השיוך לקטגוריות עיליות
+  const rename = (display, next) => {
+    next = next.trim();
+    if (!next || next === display) return;
+    const originals = [...(model.origNames[display] || [display])];
+    const nextNames = { ...names };
+    Object.keys(nextNames).forEach((o) => { if (nextNames[o] === display) originals.includes(o) || originals.push(o); });
+    originals.forEach((o) => { if (o === next) delete nextNames[o]; else nextNames[o] = next; });
+    const nextGroups = groups.map((g) => ({ ...g, categories: [...new Set(g.categories.map((c) => (c === display ? next : c)))] }));
+    onRename(nextNames, nextGroups);
+  };
   const [name, setName] = useState('');
   const groupOf = {};
   groups.forEach((g) => g.categories.forEach((c) => { groupOf[c] = g.id; }));
@@ -153,7 +164,7 @@ function ManageGroups({ model, groups, onSave }) {
   const assign = (cat, gid) => onSave(groups.map((g) => ({
     ...g, categories: g.id === gid ? [...g.categories.filter((c) => c !== cat), cat] : g.categories.filter((c) => c !== cat),
   })));
-  const rename = (gid, v) => v.trim() && onSave(groups.map((g) => (g.id === gid ? { ...g, name: v.trim() } : g)));
+  const renameGroup = (gid, v) => v.trim() && onSave(groups.map((g) => (g.id === gid ? { ...g, name: v.trim() } : g)));
   const remove = (g) => confirm(`למחוק את "${g.name}"? הקטגוריות שבה יחזרו להיות בלי קבוצה.`) && onSave(groups.filter((x) => x.id !== g.id));
 
   return (
@@ -165,7 +176,7 @@ function ManageGroups({ model, groups, onSave }) {
           {groups.map((g, i) => (
             <li key={g.id}>
               <i style={{ background: PALETTE[i % PALETTE.length] }} />
-              <input defaultValue={g.name} onBlur={(e) => rename(g.id, e.target.value)} aria-label="שם הקטגוריה העילית" />
+              <input defaultValue={g.name} onBlur={(e) => renameGroup(g.id, e.target.value)} aria-label="שם הקטגוריה העילית" />
               <span className="muted">{g.categories.length} קטגוריות</span>
               <button className="icon-btn" onClick={() => remove(g)} aria-label={`מחיקת ${g.name}`}>✕</button>
             </li>
@@ -178,14 +189,21 @@ function ManageGroups({ model, groups, onSave }) {
       </div>
 
       <div className="panel">
-        <h2>שיוך הקטגוריות מ-RiseUp</h2>
+        <h2>הקטגוריות מ-RiseUp</h2>
+        <p className="muted">לחצו על שם כדי לשנות אותו. שני שמות זהים יתאחדו לקטגוריה אחת.</p>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>קטגוריה ב-RiseUp</th><th>סה״כ בטווח</th><th>קטגוריה עילית</th></tr></thead>
+            <thead><tr><th>שם הקטגוריה (אפשר לשנות)</th><th>סה״כ בטווח</th><th>קטגוריה עילית</th></tr></thead>
             <tbody>
               {allCats.map((c) => (
                 <tr key={c}>
-                  <td>{c}</td>
+                  <td>
+                    <input className="cat-name" defaultValue={c} key={c} aria-label={`שם לקטגוריה ${c}`}
+                      onBlur={(e) => rename(c, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} />
+                    {(model.origNames[c] || []).some((o) => o !== c) && (
+                      <small className="orig">ב-RiseUp: {(model.origNames[c] || []).join(', ')}</small>
+                    )}
+                  </td>
                   <td className="num muted">{stats[c] ? ils(stats[c].total) : '—'}</td>
                   <td>
                     <select value={groupOf[c] || ''} onChange={(e) => assign(c, e.target.value)} aria-label={`קטגוריה עילית עבור ${c}`}>

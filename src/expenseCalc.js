@@ -23,7 +23,8 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
   החודש האחרון בטווח הוא החודש הנוכחי (חלקי), ולכן ההשוואה נעשית על החודש המלא האחרון
   מול הממוצע של החודשים המלאים.
 */
-export function buildModel(txs, groups, months) {
+// names: שינויי שם לקטגוריות של RiseUp — { שם מקורי: שם תצוגה }
+export function buildModel(txs, groups, months, names = {}) {
   const idx = Object.fromEntries(months.map((m, i) => [m, i]));
   const zero = () => months.map(() => 0);
   const catToGroup = {};
@@ -38,7 +39,10 @@ export function buildModel(txs, groups, months) {
   const tx = [];
   const incomeCats = new Map();
 
-  for (const t of txs) {
+  const origNames = {};
+  for (const raw of txs) {
+    const t = names[raw.category] ? { ...raw, category: names[raw.category] } : raw;
+    (origNames[t.category] ||= new Set()).add(raw.category);
     const i = idx[t.month];
     if (i == null || t.excluded) continue;
     if (t.income) {
@@ -81,6 +85,7 @@ export function buildModel(txs, groups, months) {
 
   return {
     months, list, income, total, tx, incomeList,
+    origNames: Object.fromEntries(Object.entries(origNames).map(([k, v]) => [k, [...v]])),
     incomeTrend: trend(income),
     totalTrend: trend(total),
     categories: [...catStats.values()].sort((a, b) => b.total - a.total),
