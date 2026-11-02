@@ -1,4 +1,4 @@
-export const PALETTE = ['#1e5b4f', '#c99a2e', '#b3593c', '#5470a8', '#8a5fa0', '#4f9a8f', '#a3743b', '#6b8e3a'];
+export const PALETTE = ['#5e7a5b', '#b5573a', '#d98b2b', '#7a5a43', '#9aa66b', '#c98a5f', '#4f6b62', '#e2b45c'];
 export const REST_COLOR = 'var(--t-solid)';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -14,7 +14,7 @@ const mDate = (m) => { const [y, mm] = m.split('-'); return new Date(+y, +mm - 1
 export const monthShort = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'short' }).replace('׳', '').replace('.', '');
 export const monthLong = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 export const monthName = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long' });
-export const INCOME_COLORS = ['#2e7d4f', '#5aa36f', '#8cc08f', '#3f6f8f', '#7aa0b8'];
+export const INCOME_COLORS = ['#5e7a5b', '#8ea67f', '#b8c9a6', '#d98b2b', '#7a5a43'];
 
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 
