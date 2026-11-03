@@ -343,3 +343,6 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
 .up-month li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .65rem .2rem; border-bottom: 1px solid var(--line); }
 .rec-amt-lg { font-weight: 700; }
 .all-toggle { margin: 1.5rem 0 .75rem; }
+.tx-edit { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 1rem; background: none; border: 0; padding: 0; cursor: pointer; text-align: start; }
+.tx-edit:hover .tx-biz > span { text-decoration: underline; text-underline-offset: 3px; }
+.form .seg { justify-self: start; }

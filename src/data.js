@@ -30,6 +30,7 @@ export async function loadOrCreateFamily(user) {
 export function useLiveData(familyId) {
   const [family, setFamily] = useState(null);
   const [funds, setFunds] = useState(null);
+  const [manual, setManual] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -40,7 +41,12 @@ export function useLiveData(familyId) {
       (s) => setFunds(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
       onErr,
     );
-    return () => { u1(); u2(); };
+    const u3 = onSnapshot(
+      collection(db, 'families', familyId, 'expenses'),
+      (s) => setManual(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr,
+    );
+    return () => { u1(); u2(); u3(); };
   }, [familyId]);
 
   const fundRef = (id) => doc(db, 'families', familyId, 'funds', id);
@@ -48,21 +54,35 @@ export function useLiveData(familyId) {
     addFund: (data) => addDoc(collection(db, 'families', familyId, 'funds'), { ...data, createdAt: serverTimestamp() }),
     updateFund: (id, patch) => updateDoc(fundRef(id), patch),
     deleteFund: (id) => deleteDoc(fundRef(id)),
+    addExpense: (d) => addDoc(collection(db, 'families', familyId, 'expenses'), { ...d, createdAt: serverTimestamp() }),
+    updateExpense: (id, d) => updateDoc(doc(db, 'families', familyId, 'expenses', id), d),
+    deleteExpense: (id) => deleteDoc(doc(db, 'families', familyId, 'expenses', id)),
     updateFamily: (patch) => updateDoc(doc(db, 'families', familyId), patch),
   };
-  return { family, funds, api, error };
+  return { family, funds, manual, api, error };
 }
 
 export function useDemoData() {
   const [family, setFamily] = useState(demoFamily);
   const [funds, setFunds] = useState(demoFunds);
+  const [manual, setManual] = useState(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1, 12);
+    const m = d.toISOString().slice(0, 7);
+    return [
+      { id: 'dm1', date: `${m}-12`, amount: 120, business: 'שוק הכרמל — מזומן', category: 'סופר', income: false },
+      { id: 'dm2', date: `${m}-20`, amount: 300, business: 'מתנה לחתונה — מזומן', category: 'מתנות', income: false },
+    ];
+  });
   const api = {
     addFund: async (d) => setFunds((fs) => [...fs, { ...d, id: uid() }]),
     updateFund: async (id, p) => setFunds((fs) => fs.map((f) => (f.id === id ? { ...f, ...p } : f))),
     deleteFund: async (id) => setFunds((fs) => fs.filter((f) => f.id !== id)),
+    addExpense: async (d) => setManual((xs) => [...xs, { ...d, id: uid() }]),
+    updateExpense: async (id, d) => setManual((xs) => xs.map((x) => (x.id === id ? { ...x, ...d } : x))),
+    deleteExpense: async (id) => setManual((xs) => xs.filter((x) => x.id !== id)),
     updateFamily: async (p) => setFamily((f) => ({ ...f, ...p })),
   };
-  return { family, funds, api, error: '' };
+  return { family, funds, manual, api, error: '' };
 }
 
 // ---- RiseUp ----

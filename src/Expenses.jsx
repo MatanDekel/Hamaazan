@@ -3,16 +3,20 @@ import { monthLong, PALETTE, fullAvg } from './expenseCalc';
 import { ils, pct } from './calc';
 import { uid } from './constants';
 import Recurring from './Recurring';
+import { Modal } from './ui';
+import { todayISO } from './constants';
 
-export default function Expenses({ exp, model, groups, onSaveGroups, recurring, onSaveRecurring, categoryNames, onRenameCategory }) {
+export default function Expenses({ exp, model, api, groups, onSaveGroups, recurring, onSaveRecurring, categoryNames, onRenameCategory }) {
   const [mode, setMode] = useState('month');
   const [sel, setSel] = useState(null);
+  const [editing, setEditing] = useState(null); // null | 'new' | עסקה ידנית
 
   return (
     <section>
       <div className="toolbar">
         <h1 className="page-title">{mode === 'manage' ? 'קטגוריות עיליות' : 'הוצאות'}</h1>
         <div className="row">
+          <button className="btn ghost" onClick={() => setEditing('new')}>הוספה ידנית</button>
           <button className="btn ghost" onClick={exp.reload} disabled={exp.loading}>{exp.loading ? 'טוען…' : 'רענון מ-RiseUp'}</button>
           {mode === 'manage'
             ? <button className="btn primary" onClick={() => setMode('month')}>חזרה להוצאות</button>
@@ -21,7 +25,12 @@ export default function Expenses({ exp, model, groups, onSaveGroups, recurring, 
       </div>
 
       <LoadState exp={exp} model={model} />
-      {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} />}
+      {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} onEdit={setEditing} />}
+      {editing && model && (
+        <ManualForm initial={editing === 'new' ? null : editing} model={model}
+          defaultDate={sel && sel !== model.months[model.months.length - 1] ? `${sel}-15` : todayISO()}
+          onClose={() => setEditing(null)} api={api} />
+      )}
       {model && mode === 'manage' && <ManageGroups model={model} groups={groups} onSave={onSaveGroups} names={categoryNames} onRename={onRenameCategory} />}
       {mode === 'month' && <Recurring items={recurring} onSave={onSaveRecurring} />}
     </section>
@@ -54,7 +63,7 @@ function MonthPicker({ months, month, onChange }) {
   );
 }
 
-function MonthView({ model, sel, setSel, onManage }) {
+function MonthView({ model, sel, setSel, onManage, onEdit }) {
   const { months, list, total, income } = model;
   const month = sel && months.includes(sel) ? sel : months[months.length - 2];
   const i = months.indexOf(month);
@@ -102,16 +111,45 @@ function MonthView({ model, sel, setSel, onManage }) {
                   {isCurrent ? `${Math.round((v / spent) * 100)}%` : `${pct(change, 0)} מהממוצע`}
                 </span>
               </button>
-              {isOpen && <MonthUnit model={model} unit={u} i={i} month={month} />}
+              {isOpen && <MonthUnit model={model} unit={u} i={i} month={month} onEdit={onEdit} />}
             </li>
           );
         })}
+      </ul>
+      <ManualList model={model} month={month} onEdit={onEdit} />
+    </>
+  );
+}
+
+function ManualList({ model, month, onEdit }) {
+  const items = model.tx.filter((t) => t.manual && t.month === month).sort((a, b) => b.date.localeCompare(a.date));
+  if (!items.length) return null;
+  return (
+    <>
+      <h2 className="sec">שהוספת ידנית ב{monthLong(month)}</h2>
+      <ul className="tx-list">
+        {items.map((t) => <TxRow key={t.id} t={t} showCat onEdit={onEdit} />)}
       </ul>
     </>
   );
 }
 
-function MonthUnit({ model, unit, i, month }) {
+export function TxRow({ t, showCat, onEdit }) {
+  const body = (
+    <>
+      <span className="tx-biz">
+        <span>{t.business || t.category}{t.manual && <span className="tag">ידני</span>}</span>
+        <small>{t.date.split('-').reverse().join('/')}{showCat ? ` · ${t.category}` : ''}{t.fixed ? ' · קבועה' : ''}{t.income ? ' · הכנסה' : ''}</small>
+      </span>
+      <span className={`num${t.income ? ' up' : ''}`}>{ils(t.amount)}</span>
+    </>
+  );
+  return t.manual && onEdit
+    ? <li><button className="tx-edit" onClick={() => onEdit(t)} aria-label={`עריכת ${t.business || t.category}`}>{body}</button></li>
+    : <li>{body}</li>;
+}
+
+function MonthUnit({ model, unit, i, month, onEdit }) {
   const tx = model.tx.filter((t) => t.unit === unit.key && t.month === month).sort((a, b) => b.amount - a.amount);
   const subs = unit.cats.filter((c) => c.values[i] > 0).sort((a, b) => b.values[i] - a.values[i]);
   return (
@@ -122,12 +160,7 @@ function MonthUnit({ model, unit, i, month }) {
         </ul>
       )}
       <ul className="tx-list">
-        {tx.map((t) => (
-          <li key={t.id}>
-            <span className="tx-biz">{t.business}<small>{t.date.split('-').reverse().join('/')}{unit.cats.length > 1 ? ` · ${t.category}` : ''}{t.fixed ? ' · קבועה' : ''}</small></span>
-            <span className="num">{ils(t.amount)}</span>
-          </li>
-        ))}
+        {tx.map((t) => <TxRow key={t.id} t={t} showCat={unit.cats.length > 1} onEdit={onEdit} />)}
       </ul>
     </div>
   );
@@ -218,5 +251,64 @@ function ManageGroups({ model, groups, onSave, names, onRename }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- manual transactions ---------- */
+
+function ManualForm({ initial, model, defaultDate, onClose, api }) {
+  const [f, setF] = useState(() => initial
+    ? { income: initial.income, date: initial.date, amount: initial.amount, business: initial.business, category: initial.category, newCat: '' }
+    : { income: false, date: defaultDate, amount: '', business: '', category: '', newCat: '' });
+  const [err, setErr] = useState('');
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const cats = f.income ? model.incomeList.map((u) => u.name) : model.categories.map((c) => c.name);
+  const isNew = f.category === '__new';
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const category = (isNew ? f.newCat : f.category).trim();
+    if (!(+f.amount > 0)) return setErr('הזינו סכום גדול מאפס.');
+    if (!f.date) return setErr('בחרו תאריך.');
+    if (!category) return setErr('בחרו קטגוריה או כתבו חדשה.');
+    const data = { income: f.income, date: f.date, amount: +f.amount, business: f.business.trim(), category };
+    try {
+      if (initial) await api.updateExpense(initial.docId, data); else await api.addExpense(data);
+      onClose();
+    } catch (ex) { setErr('השמירה נכשלה: ' + ex.message); }
+  };
+  const remove = async () => {
+    if (!confirm('למחוק את העסקה הזו?')) return;
+    await api.deleteExpense(initial.docId);
+    onClose();
+  };
+
+  return (
+    <Modal title={initial ? 'עריכת עסקה ידנית' : 'הוספה ידנית'} onClose={onClose}>
+      <form className="form" onSubmit={submit}>
+        <div className="seg full" role="radiogroup" aria-label="סוג">
+          <button type="button" className={!f.income ? 'on' : ''} onClick={() => setF((s) => ({ ...s, income: false, category: '' }))}>הוצאה</button>
+          <button type="button" className={f.income ? 'on' : ''} onClick={() => setF((s) => ({ ...s, income: true, category: '' }))}>הכנסה</button>
+        </div>
+        <label>תאריך<input type="date" value={f.date} onChange={set('date')} /></label>
+        <label>סכום (₪)<input type="number" min="0" step="0.01" value={f.amount} onChange={set('amount')} autoFocus /></label>
+        <label className="full">תיאור<input value={f.business} onChange={set('business')} placeholder="למשל: שוק — מזומן" /></label>
+        <label className={isNew ? '' : 'full'}>קטגוריה
+          <select value={f.category} onChange={set('category')}>
+            <option value="">בחירה…</option>
+            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value="__new">קטגוריה חדשה…</option>
+          </select>
+        </label>
+        {isNew && <label>שם הקטגוריה החדשה<input value={f.newCat} onChange={set('newCat')} /></label>}
+        <p className="footnote full">העסקה נשמרת באתר בלבד ומצטרפת לנתונים מ-RiseUp בכל הדשבורדים. היא לא נשלחת ל-RiseUp.</p>
+        {err && <p className="err full">{err}</p>}
+        <div className="form-actions full">
+          {initial && <button type="button" className="btn ghost danger" onClick={remove} style={{ marginInlineEnd: 'auto' }}>מחיקה</button>}
+          <button type="button" className="btn ghost" onClick={onClose}>ביטול</button>
+          <button className="btn primary">{initial ? 'שמירה' : 'הוספה'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }

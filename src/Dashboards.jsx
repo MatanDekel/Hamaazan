@@ -169,7 +169,7 @@ function Filtered({ model, unit, sub, onSub }) {
                   <ul className="tx-list m-tx">
                     {[...m.tx].sort((a, b) => b.date.localeCompare(a.date)).map((t) => (
                       <li key={t.id}>
-                        <span className="tx-biz">{t.date.split('-').reverse().join('/')}<small>{t.category}{t.fixed ? ' · קבועה' : ''}</small></span>
+                        <span className="tx-biz"><span>{t.date.split('-').reverse().join('/')}{t.manual && <span className="tag">ידני</span>}</span><small>{t.category}{t.fixed ? ' · קבועה' : ''}</small></span>
                         <span className="num">{ils(t.amount)}</span>
                       </li>
                     ))}

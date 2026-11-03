@@ -62,14 +62,24 @@ function DemoShell({ onLogout }) {
   return <Shell {...data} demo user={{ displayName: 'אורח', email: 'noa@example.com' }} onLogout={onLogout} />;
 }
 
-function Shell({ family, funds, api, user, demo, onLogout, onDemo }) {
+function Shell({ family, funds, manual = [], api, user, demo, onLogout, onDemo }) {
   const [tab, setTab] = useState('invest');
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
   const open = funds.find((f) => f.id === openId);
   const exp = useExpenseData(demo ? demoLoader : loadRiseup, tab === 'expenses' || tab === 'dash');
   const groups = family.expenseGroups;
-  const model = useMemo(() => (exp.txs ? buildModel(exp.txs, groups || [], exp.months, family.categoryNames || {}) : null), [exp.txs, groups, exp.months, family.categoryNames]);
+  // עסקאות ידניות מצטרפות לעסקאות מ-RiseUp; אם RiseUp נכשל, עדיין מציגים את הידניות
+  const model = useMemo(() => {
+    const base = exp.txs ?? (exp.error ? [] : null);
+    if (!base) return null;
+    const own = manual.map((x) => ({
+      id: 'm:' + x.id, docId: x.id, manual: true, date: x.date, month: x.date.slice(0, 7),
+      business: x.business || '', amount: +x.amount || 0, income: !!x.income, category: x.category || 'אחר',
+      fixed: false, excluded: false,
+    }));
+    return buildModel([...base, ...own], groups || [], exp.months, family.categoryNames || {});
+  }, [exp.txs, exp.error, manual, groups, exp.months, family.categoryNames]);
 
   const go = (t) => { setTab(t); setOpenId(null); };
 
@@ -95,7 +105,7 @@ function Shell({ family, funds, api, user, demo, onLogout, onDemo }) {
         {tab === 'invest' && (open
           ? <FundDetail fund={open} family={family} api={api} onBack={() => setOpenId(null)} />
           : <Investments funds={funds} family={family} api={api} onOpen={setOpenId} onAdd={() => setAdding(true)} />)}
-        {tab === 'expenses' && <Expenses exp={exp} model={model} groups={groups || []} onSaveGroups={(g) => api.updateFamily({ expenseGroups: g })}
+        {tab === 'expenses' && <Expenses exp={exp} model={model} api={api} groups={groups || []} onSaveGroups={(g) => api.updateFamily({ expenseGroups: g })}
           categoryNames={family.categoryNames || {}} onRenameCategory={(names, g) => api.updateFamily({ categoryNames: names, expenseGroups: g })}
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}
