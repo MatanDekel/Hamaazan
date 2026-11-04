@@ -346,3 +346,9 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
 .tx-edit { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 1rem; background: none; border: 0; padding: 0; cursor: pointer; text-align: start; }
 .tx-edit:hover .tx-biz > span { text-decoration: underline; text-underline-offset: 3px; }
 .form .seg { justify-self: start; }
+.excluded { margin-top: 2rem; border: 1px dashed var(--ink-3); border-radius: 14px; padding: .25rem 1rem; }
+.ex-head { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 1rem; padding: .85rem 0; background: none; border: 0; cursor: pointer; text-align: start; }
+.ex-head > span:first-child { display: flex; flex-direction: column; }
+.ex-head small { color: var(--ink-3); font-size: .82rem; }
+.ex-sums { display: flex; flex-direction: column; align-items: flex-end; font-weight: 700; white-space: nowrap; }
+.excluded .tx-list { margin-bottom: .75rem; }

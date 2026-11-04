@@ -44,11 +44,13 @@ export function buildModel(txs, groups, months, names = {}) {
   const incomeCats = new Map();
 
   const origNames = {};
+  const excluded = [];
   for (const raw of txs) {
     const t = names[raw.category] ? { ...raw, category: names[raw.category] } : raw;
     (origNames[t.category] ||= new Set()).add(raw.category);
     const i = idx[t.month];
-    if (i == null || t.excluded) continue;
+    if (i == null) continue;
+    if (t.excluded) { excluded.push(t); continue; }
     if (t.income) {
       income[i] += t.amount;
       if (!incomeCats.has(t.category)) incomeCats.set(t.category, zero());
@@ -88,7 +90,7 @@ export function buildModel(txs, groups, months, names = {}) {
     .map((u, i) => ({ ...u, color: INCOME_COLORS[i % INCOME_COLORS.length] }));
 
   return {
-    months, list, income, total, tx, incomeList,
+    months, list, income, total, tx, incomeList, excluded,
     origNames: Object.fromEntries(Object.entries(origNames).map(([k, v]) => [k, [...v]])),
     incomeTrend: trend(income),
     totalTrend: trend(total),

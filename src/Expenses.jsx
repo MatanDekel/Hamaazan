@@ -117,6 +117,7 @@ function MonthView({ model, sel, setSel, onManage, onEdit }) {
         })}
       </ul>
       <ManualList model={model} month={month} onEdit={onEdit} />
+      <ExcludedList model={model} month={month} />
     </>
   );
 }
@@ -131,6 +132,29 @@ function ManualList({ model, month, onEdit }) {
         {items.map((t) => <TxRow key={t.id} t={t} showCat onEdit={onEdit} />)}
       </ul>
     </>
+  );
+}
+
+function ExcludedList({ model, month }) {
+  const [open, setOpen] = useState(false);
+  const items = model.excluded.filter((t) => t.month === month).sort((a, b) => b.date.localeCompare(a.date));
+  if (!items.length) return null;
+  const out = items.filter((t) => !t.income).reduce((s, t) => s + t.amount, 0);
+  const inn = items.filter((t) => t.income).reduce((s, t) => s + t.amount, 0);
+  return (
+    <div className="excluded">
+      <button className="ex-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span>
+          <strong>מחוץ לתזרים ב{monthLong(month)}</strong>
+          <small>{items.length} עסקאות שסימנת ב-RiseUp — לא נספרות בסכומים · לחצו {open ? 'לסגירה' : 'לפירוט'}</small>
+        </span>
+        <span className="ex-sums">
+          {out > 0 && <span className="num">{ils(out)} יצא</span>}
+          {inn > 0 && <span className="num up">{ils(inn)} נכנס</span>}
+        </span>
+      </button>
+      {open && <ul className="tx-list">{items.map((t) => <TxRow key={t.id} t={t} showCat />)}</ul>}
+    </div>
   );
 }
 
