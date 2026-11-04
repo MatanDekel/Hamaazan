@@ -4,7 +4,7 @@ import { ils, pct } from './calc';
 import { uid } from './constants';
 import Recurring from './Recurring';
 import { Modal } from './ui';
-import { usePlans } from './Plans';
+import { usePlans, BulkAssign } from './Plans';
 import { todayISO } from './constants';
 
 export default function Expenses({ exp, model, api, groups, onSaveGroups, recurring, onSaveRecurring, categoryNames, onRenameCategory }) {
@@ -151,13 +151,15 @@ function ManualList({ model, month, onEdit }) {
 
 function ExcludedList({ model, month }) {
   const [open, setOpen] = useState(false);
+  const [bulk, setBulk] = useState(false);
+  const [done, setDone] = useState('');
   const items = model.excluded.filter((t) => t.month === month).sort((a, b) => b.date.localeCompare(a.date));
   if (!items.length) return null;
   const out = items.filter((t) => !t.income).reduce((s, t) => s + t.amount, 0);
   const inn = items.filter((t) => t.income).reduce((s, t) => s + t.amount, 0);
   return (
     <div className="excluded">
-      <button className="ex-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button className="ex-head" onClick={() => { setOpen(!open); setBulk(false); }} aria-expanded={open}>
         <span>
           <strong>מחוץ לתזרים ב{monthLong(month)}</strong>
           <small>{items.length} עסקאות שסימנת ב-RiseUp — לא נספרות בסכומים · לחצו {open ? 'לסגירה' : 'לפירוט'}</small>
@@ -167,7 +169,18 @@ function ExcludedList({ model, month }) {
           {inn > 0 && <span className="num up">{ils(inn)} נכנס</span>}
         </span>
       </button>
-      {open && <ul className="tx-list">{items.map((t) => <TxRow key={t.id} t={t} showCat />)}</ul>}
+      {open && !bulk && (
+        <>
+          <div className="ex-tools">
+            <button className="btn ghost" onClick={() => { setBulk(true); setDone(''); }}>שיוך כמה עסקאות לתוכנית</button>
+            {done && <span className="hint">{done}</span>}
+          </div>
+          <ul className="tx-list">{items.map((t) => <TxRow key={t.id} t={t} showCat />)}</ul>
+        </>
+      )}
+      {open && bulk && (
+        <BulkAssign txs={items} onDone={(n, name) => { setBulk(false); if (n) setDone(`${n} עסקאות שויכו ל${name}.`); }} />
+      )}
     </div>
   );
 }

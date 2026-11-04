@@ -455,3 +455,19 @@ input, select { border-radius: 12px; border-color: var(--line); }
 .month-picker { align-items: center; }
 .mp-label select { padding-inline: .25rem; }
 .month-summary dd.dd-text { font-size: 1rem; font-weight: 600; line-height: 1.3; padding-top: .3rem; }
+.ex-tools { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.ex-tools .hint { margin: 0; }
+.bulk { padding-bottom: 1rem; }
+.bulk-bar { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: flex-end; padding: .75rem 0 1rem; border-bottom: 1px solid var(--line); }
+.bulk-bar label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; font-weight: 600; color: var(--ink-2); flex: 1 1 11rem; }
+.bulk-bar .link { padding-bottom: .6rem; }
+.bulk-list { list-style: none; padding: 0; margin: 0; }
+.bulk-list li { border-bottom: 1px solid var(--line); padding: .6rem .2rem; }
+.bulk-list li.on { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.bulk-check { display: flex; align-items: center; gap: .75rem; cursor: pointer; }
+.bulk-check input { width: 1.15rem; height: 1.15rem; flex: none; accent-color: var(--accent); }
+.bulk-check .tx-biz { flex: 1; min-width: 0; }
+.bulk-subs { margin: .5rem 0 0; padding-inline-start: 1.9rem; }
+.bulk-subs button { padding: .25rem .75rem; font-size: .85rem; }
+.bulk-actions { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 0 calc(.25rem + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); margin-top: .5rem; }
+.excluded { background: var(--surface); }

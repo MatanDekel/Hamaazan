@@ -6,7 +6,7 @@ import { PALETTE } from './expenseCalc';
 export const DEFAULT_SUBS = ['טיסות', 'לינה', 'אוכל', 'אטרקציות', 'תחבורה', 'שונות'];
 
 /* ---------- context: מאפשר לכל שורת עסקה לשייך לתוכנית ---------- */
-const PlansCtx = createContext({ byTx: {}, openAssign: null });
+const PlansCtx = createContext({ byTx: {}, openAssign: null, plans: [], api: null });
 export const usePlans = () => useContext(PlansCtx);
 
 export function PlansProvider({ plans, api, children }) {
@@ -17,7 +17,7 @@ export function PlansProvider({ plans, api, children }) {
     return m;
   }, [plans]);
   return (
-    <PlansCtx.Provider value={{ byTx, openAssign: setAssigning }}>
+    <PlansCtx.Provider value={{ byTx, openAssign: setAssigning, plans, api }}>
       {children}
       {assigning && <AssignModal tx={assigning} plans={plans} byTx={byTx} api={api} onClose={() => setAssigning(null)} />}
     </PlansCtx.Provider>
@@ -91,6 +91,105 @@ function AssignModal({ tx, plans, byTx, api, onClose }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+/* ---------- שיוך כמה עסקאות בבת אחת ---------- */
+
+export function BulkAssign({ txs, onDone }) {
+  const { plans, api, byTx } = usePlans();
+  const [planId, setPlanId] = useState(plans[0]?.id || '__new');
+  const [newName, setNewName] = useState('');
+  const plan = plans.find((p) => p.id === planId);
+  const subs = plan?.subs || DEFAULT_SUBS;
+  const [picked, setPicked] = useState({}); // txId -> sub
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const count = Object.keys(picked).length;
+
+  const toggle = (t) => setPicked((p) => {
+    const n = { ...p };
+    if (n[t.id]) delete n[t.id];
+    else n[t.id] = (byTx[t.id]?.plan.id === planId && byTx[t.id]?.sub) || subs[0];
+    return n;
+  });
+  const all = () => setPicked(count === txs.length ? {} : Object.fromEntries(txs.map((t) => [t.id, picked[t.id] || subs[0]])));
+  const changePlan = (id) => {
+    setPlanId(id);
+    const nextSubs = plans.find((p) => p.id === id)?.subs || DEFAULT_SUBS;
+    setPicked((p) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, nextSubs.includes(v) ? v : nextSubs[0]])));
+  };
+
+  const save = async () => {
+    if (!count) return setErr('סמני לפחות עסקה אחת.');
+    setBusy(true); setErr('');
+    try {
+      let target = planId;
+      if (planId === '__new') {
+        if (!newName.trim()) { setBusy(false); return setErr('תני שם לתוכנית.'); }
+        target = await api.addPlan({ name: newName.trim(), budget: null, from: '', to: '', subs: DEFAULT_SUBS, items: [] });
+      }
+      const ids = new Set(Object.keys(picked));
+      // מסירים מתוכניות אחרות עסקאות שעוברות לכאן
+      for (const p of plans) {
+        if (p.id === target) continue;
+        if ((p.items || []).some((it) => ids.has(it.txId))) {
+          await api.updatePlan(p.id, { items: p.items.filter((it) => !ids.has(it.txId)) });
+        }
+      }
+      const base = (plans.find((p) => p.id === target)?.items || []).filter((it) => !ids.has(it.txId));
+      const added = txs.filter((t) => ids.has(t.id)).map((t) => snapshotOf(t, picked[t.id]));
+      await api.updatePlan(target, { items: [...base, ...added] });
+      onDone(count, plans.find((p) => p.id === target)?.name || newName.trim());
+    } catch (e) { setErr('השמירה נכשלה: ' + e.message); setBusy(false); }
+  };
+
+  return (
+    <div className="bulk">
+      <div className="bulk-bar">
+        <label>לתוכנית
+          <select value={planId} onChange={(e) => changePlan(e.target.value)}>
+            {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <option value="__new">תוכנית חדשה…</option>
+          </select>
+        </label>
+        {planId === '__new' && <label>שם<input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="למשל: טיסה לאוסטריה" /></label>}
+        <button type="button" className="link" onClick={all}>{count === txs.length ? 'ניקוי הסימון' : 'סימון הכול'}</button>
+      </div>
+      <ul className="bulk-list">
+        {txs.map((t) => {
+          const on = !!picked[t.id];
+          const cur = byTx[t.id];
+          return (
+            <li key={t.id} className={on ? 'on' : ''}>
+              <label className="bulk-check">
+                <input type="checkbox" checked={on} onChange={() => toggle(t)} />
+                <span className="tx-biz">
+                  <span>{t.business || t.category}</span>
+                  <small>{t.date.split('-').reverse().join('/')} · {t.category}{cur ? ` · כרגע ב${cur.plan.name}` : ''}</small>
+                </span>
+                <span className="num">{ils(t.amount)}</span>
+              </label>
+              {on && (
+                <div className="chips sub-chips bulk-subs">
+                  {subs.map((s) => (
+                    <button type="button" key={s} className={picked[t.id] === s ? 'on' : ''}
+                      onClick={() => setPicked((p) => ({ ...p, [t.id]: s }))}>{s}</button>
+                  ))}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {err && <p className="err">{err}</p>}
+      <div className="bulk-actions">
+        <button type="button" className="btn ghost" onClick={() => onDone(0)}>ביטול</button>
+        <button type="button" className="btn primary" onClick={save} disabled={busy || !count}>
+          {busy ? 'שומר…' : `שיוך ${count || ''} עסקאות`.replace('  ', ' ')}
+        </button>
+      </div>
+    </div>
   );
 }
 
