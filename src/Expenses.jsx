@@ -52,15 +52,28 @@ function MonthPicker({ months, month, onChange }) {
   const today = new Date();
   return (
     <div className="month-picker">
-      <button className="btn ghost" disabled={i <= 0} onClick={() => onChange(months[i - 1])} aria-label="חודש קודם">→</button>
+      <button className="mp-arrow" disabled={i <= 0} onClick={() => onChange(months[i - 1])} aria-label="חודש קודם" title="חודש קודם">
+        <Chevron dir="right" />
+      </button>
       <div className="mp-label">
         <select value={month} onChange={(e) => onChange(e.target.value)} aria-label="בחירת חודש">
           {[...months].reverse().map((m) => <option key={m} value={m}>{monthLong(m)}</option>)}
         </select>
         <span className="mp-sub">{i === last ? `החודש הנוכחי — נכון ל-${today.getDate()}.${today.getMonth() + 1}` : 'חודש מלא'}</span>
       </div>
-      <button className="btn ghost" disabled={i >= last} onClick={() => onChange(months[i + 1])} aria-label="חודש הבא">←</button>
+      <button className="mp-arrow" disabled={i >= last} onClick={() => onChange(months[i + 1])} aria-label="חודש הבא" title="חודש הבא">
+        <Chevron dir="left" />
+      </button>
     </div>
+  );
+}
+
+// חץ SVG ממורכז; בעברית "קודם" מצביע ימינה ו"הבא" שמאלה
+function Chevron({ dir }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      {dir === 'right' ? <path d="M9 5l7 7-7 7" /> : <path d="M15 5l-7 7 7 7" />}
+    </svg>
   );
 }
 
@@ -87,7 +100,7 @@ function MonthView({ model, sel, setSel, onManage, onEdit }) {
         <div><dt>{earned - spent >= 0 ? 'נשאר' : 'גירעון'}</dt><dd className={earned - spent >= 0 ? 'up' : 'down'}>{ils(Math.abs(earned - spent))}</dd></div>
         <div>
           <dt>מול הממוצע החודשי</dt>
-          <dd className={isCurrent ? 'muted' : spent > avgSpent ? 'down' : 'up'}>{isCurrent ? 'חודש לא שלם' : pct(avgSpent ? spent / avgSpent - 1 : null, 0)}</dd>
+          <dd className={isCurrent ? 'muted dd-text' : spent > avgSpent ? 'down' : 'up'}>{isCurrent ? 'יחושב בסוף החודש' : pct(avgSpent ? spent / avgSpent - 1 : null, 0)}</dd>
         </div>
       </dl>
 
