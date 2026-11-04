@@ -71,6 +71,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
         <div><dt>יתרה</dt><dd>{ils(a.balance)}</dd></div>
         <div><dt>סך ההפקדות</dt><dd>{ils(a.principal)}</dd></div>
         <div><dt>רווח</dt><dd className={tone(a.profit)}>{ils(a.profit)}</dd></div>
+        <div><dt>רווח ביחס להפקדות</dt><dd className={tone(a.profit)}>{a.profit != null && a.principal > 0 ? pct(a.profit / a.principal) : '—'}</dd></div>
         <div><dt>תשואת המסלול מאז העדכון הראשון</dt><dd className={tone(a.cumR)}>{pct(a.cumR, 2)}</dd></div>
         <div><dt>בממוצע לשנה</dt><dd className={tone(a.cumAnn)}>{pct(a.cumAnn)}</dd></div>
         <div><dt>דמי ניהול ששולמו (הערכה)</dt><dd>{ils(a.fees)}</dd></div>
@@ -121,7 +122,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
                   <td>{dateFmt(r.date)}</td>
                   <td className="num">{ils(r.balance)}</td>
                   {r.opening ? (
-                    <td colSpan="5" className="muted">נקודת פתיחה</td>
+                    <td colSpan="5" className="muted">{r.implicit ? 'פתיחת הקופה — לפי מה שהופקד עד אז' : 'נקודת פתיחה'}</td>
                   ) : (
                     <>
                       <td className="num">{ils(r.deposits)}{!r.manual && <span className="muted" title="מחושב לפי ההפקדה החודשית"> *</span>}</td>
@@ -131,7 +132,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
                       <td className={`num muted ${tone(r.netR)}`}>{pct(r.netR, 2)}</td>
                     </>
                   )}
-                  <td><button className="icon-btn" aria-label="מחיקת עדכון" onClick={() => removeSnap(r.id)}>✕</button></td>
+                  <td>{!r.implicit && <button className="icon-btn" aria-label="מחיקת עדכון" onClick={() => removeSnap(r.id)}>✕</button>}</td>
                 </tr>
               ))}
             </tbody>

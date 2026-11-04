@@ -22,6 +22,11 @@ const num = (v) => (v === '' || v == null || isNaN(+v) ? 0 : +v);
 */
 export function analyzeFund(f) {
   const snaps = [...(f.snapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
+  // אם העדכון הראשון מאוחר מתאריך הפתיחה, תאריך הפתיחה הוא נקודת ההתחלה:
+  // היתרה בו = הסכום שהופקד עד אז (למשל 0 בקופה חדשה). כך כבר מהעדכון הראשון יש תשואה.
+  if (snaps.length && f.startDate && snaps[0].date > f.startDate) {
+    snaps.unshift({ id: 'opening', date: f.startDate, balance: num(f.openingBalance ?? f.investedSoFar), deposits: null, implicit: true });
+  }
   const fd = num(f.feeDeposit) / 100;
   const fb = num(f.feeBalance) / 100;
   const monthly = num(f.monthlyDeposit);
