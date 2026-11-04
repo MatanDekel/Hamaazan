@@ -11,6 +11,7 @@ React + Vite, Firebase (Auth + Firestore), פריסה ל-Vercel.
 6. **RiseUp** — באותו מסך ב-Vercel להוסיף גם:
    - `RISEUP_PAT` — הטוקן מ-input.riseup.co.il/developer/tokens (הרשאת `budget:read`)
    - `ALLOWED_EMAILS` — המיילים שמורשים לראות הוצאות, מופרדים בפסיק
+   - `TX_ENC_KEY` — מפתח להצפנת חודשים סגורים שנשמרים ב-Firestore (`openssl rand -base64 32`). בלעדיו האתר פשוט לא שומר ומושך הכול מ-RiseUp.
    - בלי קידומת `VITE_`! אחרת הטוקן ייחשף בדפדפן.
 7. מקומית: `npm install && npx vercel dev` (עם `npm run dev` לשונית ההוצאות לא תעבוד כי אין שרת `/api`).
 

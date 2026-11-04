@@ -5,6 +5,7 @@ import { loadOrCreateFamily, useLiveData, useDemoData, loadRiseup } from './data
 import { demoTransactions } from './demoExpenses';
 import Expenses from './Expenses';
 import Dashboards from './Dashboards';
+import Plans, { PlansProvider } from './Plans';
 import { useExpenseData } from './expenseData';
 import { buildModel } from './expenseCalc';
 import Login from './Login';
@@ -62,12 +63,13 @@ function DemoShell({ onLogout }) {
   return <Shell {...data} demo user={{ displayName: 'אורח', email: 'noa@example.com' }} onLogout={onLogout} />;
 }
 
-function Shell({ family, funds, manual = [], api, user, demo, onLogout, onDemo }) {
+function Shell({ family, funds, manual = [], plans = [], api, user, demo, onLogout, onDemo }) {
   const [tab, setTab] = useState('invest');
   const [openId, setOpenId] = useState(null);
   const [adding, setAdding] = useState(false);
   const open = funds.find((f) => f.id === openId);
-  const exp = useExpenseData(demo ? demoLoader : loadRiseup, tab === 'expenses' || tab === 'dash');
+  const loader = useMemo(() => (demo ? demoLoader : (m, force) => loadRiseup(m, force, family.id)), [demo, family.id]);
+  const exp = useExpenseData(loader, tab === 'expenses' || tab === 'dash');
   const groups = family.expenseGroups;
   // עסקאות ידניות מצטרפות לעסקאות מ-RiseUp; אם RiseUp נכשל, עדיין מציגים את הידניות
   const model = useMemo(() => {
@@ -84,6 +86,7 @@ function Shell({ family, funds, manual = [], api, user, demo, onLogout, onDemo }
   const go = (t) => { setTab(t); setOpenId(null); };
 
   return (
+    <PlansProvider plans={plans} api={api}>
     <div className="app">
       {demo && <div className="demo-banner">אתר הדגמה עם נתונים לדוגמה — שינויים לא נשמרים</div>}
       <header className="top">
@@ -92,6 +95,7 @@ function Shell({ family, funds, manual = [], api, user, demo, onLogout, onDemo }
           <button className={tab === 'invest' ? 'on' : ''} onClick={() => go('invest')}>חסכונות</button>
           <button className={tab === 'expenses' ? 'on' : ''} onClick={() => go('expenses')}>הוצאות</button>
           <button className={tab === 'dash' ? 'on' : ''} onClick={() => go('dash')}>דשבורדים</button>
+          <button className={tab === 'plans' ? 'on' : ''} onClick={() => go('plans')}>תוכניות</button>
           <button className={tab === 'family' ? 'on' : ''} onClick={() => go('family')}>משפחה</button>
         </nav>
         <div className="me">
@@ -109,11 +113,13 @@ function Shell({ family, funds, manual = [], api, user, demo, onLogout, onDemo }
           categoryNames={family.categoryNames || {}} onRenameCategory={(names, g) => api.updateFamily({ categoryNames: names, expenseGroups: g })}
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}
+        {tab === 'plans' && <Plans plans={plans} api={api} />}
         {tab === 'family' && <Family family={family} api={api} myEmail={user.email?.toLowerCase()} demo={demo} />}
       </main>
 
       {adding && <FundForm owners={family.owners || []} onClose={() => setAdding(false)} onSave={api.addFund} />}
     </div>
+    </PlansProvider>
   );
 }
 

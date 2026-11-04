@@ -4,7 +4,7 @@ import {
   serverTimestamp, query, where, getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { demoFamily, demoFunds } from './demoData';
+import { demoFamily, demoFunds, demoPlans } from './demoData';
 import { uid } from './constants';
 
 // מוצא את המשפחה של המשתמש לפי המייל, ואם אין — פותח משפחה חדשה
@@ -31,6 +31,7 @@ export function useLiveData(familyId) {
   const [family, setFamily] = useState(null);
   const [funds, setFunds] = useState(null);
   const [manual, setManual] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -46,7 +47,12 @@ export function useLiveData(familyId) {
       (s) => setManual(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
       onErr,
     );
-    return () => { u1(); u2(); u3(); };
+    const u4 = onSnapshot(
+      collection(db, 'families', familyId, 'plans'),
+      (s) => setPlans(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      onErr,
+    );
+    return () => { u1(); u2(); u3(); u4(); };
   }, [familyId]);
 
   const fundRef = (id) => doc(db, 'families', familyId, 'funds', id);
@@ -57,14 +63,18 @@ export function useLiveData(familyId) {
     addExpense: (d) => addDoc(collection(db, 'families', familyId, 'expenses'), { ...d, createdAt: serverTimestamp() }),
     updateExpense: (id, d) => updateDoc(doc(db, 'families', familyId, 'expenses', id), d),
     deleteExpense: (id) => deleteDoc(doc(db, 'families', familyId, 'expenses', id)),
+    addPlan: async (d) => (await addDoc(collection(db, 'families', familyId, 'plans'), { ...d, createdAt: serverTimestamp() })).id,
+    updatePlan: (id, d) => updateDoc(doc(db, 'families', familyId, 'plans', id), d),
+    deletePlan: (id) => deleteDoc(doc(db, 'families', familyId, 'plans', id)),
     updateFamily: (patch) => updateDoc(doc(db, 'families', familyId), patch),
   };
-  return { family, funds, manual, api, error };
+  return { family, funds, manual, plans, api, error };
 }
 
 export function useDemoData() {
   const [family, setFamily] = useState(demoFamily);
   const [funds, setFunds] = useState(demoFunds);
+  const [plans, setPlans] = useState(demoPlans);
   const [manual, setManual] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1, 12);
     const m = d.toISOString().slice(0, 7);
@@ -80,21 +90,25 @@ export function useDemoData() {
     addExpense: async (d) => setManual((xs) => [...xs, { ...d, id: uid() }]),
     updateExpense: async (id, d) => setManual((xs) => xs.map((x) => (x.id === id ? { ...x, ...d } : x))),
     deleteExpense: async (id) => setManual((xs) => xs.filter((x) => x.id !== id)),
+    addPlan: async (d) => { const id = uid(); setPlans((ps) => [...ps, { ...d, id }]); return id; },
+    updatePlan: async (id, d) => setPlans((ps) => ps.map((p) => (p.id === id ? { ...p, ...d } : p))),
+    deletePlan: async (id) => setPlans((ps) => ps.filter((p) => p.id !== id)),
     updateFamily: async (p) => setFamily((f) => ({ ...f, ...p })),
   };
-  return { family, funds, manual, api, error: '' };
+  return { family, funds, manual, plans, api, error: '' };
 }
 
 // ---- RiseUp ----
 // מטמון לפי חודש, כדי ששינוי טווח לא ימשוך שוב חודשים שכבר נטענו
 const monthCache = new Map();
-export async function loadRiseup(months, force = false) {
+export async function loadRiseup(months, force = false, familyId = '') {
   const { auth } = await import('./firebase');
   const current = months[months.length - 1];
   const missing = months.filter((m) => force || m === current || !monthCache.has(m));
   if (missing.length) {
     const token = await auth.currentUser.getIdToken();
-    const r = await fetch(`/api/riseup?months=${missing.join(',')}`, { headers: { Authorization: `Bearer ${token}` } });
+    const qs = new URLSearchParams({ months: missing.join(','), family: familyId, ...(force ? { force: '1' } : {}) });
+    const r = await fetch(`/api/riseup?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
     let j;
     try { j = await r.json(); } catch { throw new Error('השרת לא החזיר תשובה תקינה. בהרצה מקומית צריך להשתמש ב-vercel dev.'); }
     if (!r.ok) throw new Error(j.error || `שגיאה ${r.status}`);

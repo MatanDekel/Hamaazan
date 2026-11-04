@@ -22,6 +22,13 @@ service cloud.firestore {
       match /expenses/{expenseId} {
         allow read, write: if isMember(fid);
       }
+      match /plans/{planId} {
+        allow read, write: if isMember(fid);
+      }
+      // עסקאות של חודשים סגורים — מוצפנות בשרת, אי אפשר לקרוא אותן בלי המפתח שב-Vercel
+      match /cache/{month} {
+        allow read, write: if isMember(fid);
+      }
     }
   }
 }

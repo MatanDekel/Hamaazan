@@ -352,3 +352,37 @@ tr.clickable:hover, tr.clickable:focus-visible { background: var(--accent-soft);
 .ex-head small { color: var(--ink-3); font-size: .82rem; }
 .ex-sums { display: flex; flex-direction: column; align-items: flex-end; font-weight: 700; white-space: nowrap; }
 .excluded .tx-list { margin-bottom: .75rem; }
+
+/* plans */
+.tx-row { gap: .75rem; }
+.tx-row .tx-biz, .tx-row .tx-edit { flex: 1; min-width: 0; }
+.plan-btn { border: 1px dashed var(--ink-3); background: none; color: var(--ink-2); border-radius: 999px; padding: .15rem .65rem; font-size: .78rem; cursor: pointer; white-space: nowrap; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+.plan-btn:hover { border-color: var(--accent); color: var(--accent); }
+.plan-btn.on { border: 1px solid transparent; background: color-mix(in srgb, var(--t-sp) 20%, transparent); color: var(--ink); font-weight: 600; }
+.plans-intro { max-width: 40rem; margin: -1rem 0 1.5rem; }
+.plan-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; }
+.plan-card { display: flex; flex-direction: column; gap: .3rem; width: 100%; text-align: start; padding: 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
+.plan-card:hover { border-color: var(--accent); }
+.pc-name { font-family: var(--serif); font-weight: 600; font-size: 1.3rem; }
+.pc-meta, .pc-left { font-size: .85rem; color: var(--ink-3); }
+.pc-sum { font-size: 1.6rem; font-variant-numeric: tabular-nums; margin: .3rem 0; }
+.plan-subs { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.plan-subs > li { border-bottom: 1px solid var(--line); }
+.plan-subs li.open { background: var(--surface); }
+.plan-tx { margin: 0 1rem .75rem; max-width: none; }
+.plan-tx li { gap: .75rem; }
+.plan-tx .tx-biz { flex: 1; }
+.plan-tx select { width: auto; padding: .25rem .4rem; font-size: .85rem; }
+.assign-tx { display: flex; flex-direction: column; padding: .75rem 1rem; background: var(--bg); border-radius: 10px; }
+.sub-chips { margin: .25rem 0 0; }
+.sub-chips button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: .35rem .9rem; cursor: pointer; }
+.sub-chips button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+@media (max-width: 640px) {
+  .tabs { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .tabs button { flex: none; }
+  .tx-row { flex-wrap: wrap; row-gap: .35rem; }
+  .tx-row .tx-biz, .tx-row .tx-edit { flex: 1 1 calc(100% - 6.5rem); }
+  .tx-row > .num { order: 2; }
+  .tx-row .plan-btn { order: 3; max-width: 100%; }
+  .plan-tx li { flex-wrap: wrap; }
+}

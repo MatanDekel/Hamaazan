@@ -4,6 +4,7 @@ import { ils, pct } from './calc';
 import { uid } from './constants';
 import Recurring from './Recurring';
 import { Modal } from './ui';
+import { usePlans } from './Plans';
 import { todayISO } from './constants';
 
 export default function Expenses({ exp, model, api, groups, onSaveGroups, recurring, onSaveRecurring, categoryNames, onRenameCategory }) {
@@ -159,18 +160,27 @@ function ExcludedList({ model, month }) {
 }
 
 export function TxRow({ t, showCat, onEdit }) {
-  const body = (
-    <>
-      <span className="tx-biz">
-        <span>{t.business || t.category}{t.manual && <span className="tag">ידני</span>}</span>
-        <small>{t.date.split('-').reverse().join('/')}{showCat ? ` · ${t.category}` : ''}{t.fixed ? ' · קבועה' : ''}{t.income ? ' · הכנסה' : ''}</small>
-      </span>
-      <span className={`num${t.income ? ' up' : ''}`}>{ils(t.amount)}</span>
-    </>
+  const { byTx, openAssign } = usePlans();
+  const inPlan = byTx[t.id];
+  const info = (
+    <span className="tx-biz">
+      <span>{t.business || t.category}{t.manual && <span className="tag">ידני</span>}</span>
+      <small>{t.date.split('-').reverse().join('/')}{showCat ? ` · ${t.category}` : ''}{t.fixed ? ' · קבועה' : ''}{t.income ? ' · הכנסה' : ''}</small>
+    </span>
   );
-  return t.manual && onEdit
-    ? <li><button className="tx-edit" onClick={() => onEdit(t)} aria-label={`עריכת ${t.business || t.category}`}>{body}</button></li>
-    : <li>{body}</li>;
+  return (
+    <li className="tx-row">
+      {t.manual && onEdit
+        ? <button className="tx-edit" onClick={() => onEdit(t)} aria-label={`עריכת ${t.business || t.category}`}>{info}</button>
+        : info}
+      {openAssign && (
+        <button className={`plan-btn${inPlan ? ' on' : ''}`} onClick={() => openAssign(t)}>
+          {inPlan ? `${inPlan.plan.name} · ${inPlan.sub}` : 'לתוכנית'}
+        </button>
+      )}
+      <span className={`num${t.income ? ' up' : ''}`}>{ils(t.amount)}</span>
+    </li>
+  );
 }
 
 function MonthUnit({ model, unit, i, month, onEdit }) {

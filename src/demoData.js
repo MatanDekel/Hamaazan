@@ -76,3 +76,20 @@ export const demoFunds = [
     quarters: [0.03, 0.035, -0.045, 0.07, 0.028, 0.022, 0.05, 0.031],
   }),
 ];
+
+export const demoPlans = [{
+  id: 'plan-austria', name: 'טיסה לאוסטריה', budget: 18000, from: '2026-07-10', to: '2026-07-20',
+  subs: ['טיסות', 'לינה', 'אוכל', 'אטרקציות', 'תחבורה', 'שונות'],
+  items: [
+    { txId: 'd-a1', date: '2026-03-02', amount: 3480, business: 'אל על', category: 'טיסות', sub: 'טיסות' },
+    { txId: 'd-a2', date: '2026-04-18', amount: 2650, business: 'Booking.com — Innsbruck', category: 'חופשה', sub: 'לינה' },
+    { txId: 'd-a3', date: '2026-05-06', amount: 1890, business: 'Airbnb — Hallstatt', category: 'חופשה', sub: 'לינה' },
+    { txId: 'd-a4', date: '2026-07-11', amount: 410, business: 'Figlmüller Wien', category: 'מסעדות', sub: 'אוכל' },
+    { txId: 'd-a5', date: '2026-07-12', amount: 236, business: 'Billa', category: 'סופר', sub: 'אוכל' },
+    { txId: 'd-a6', date: '2026-07-14', amount: 520, business: 'Gasthof Post', category: 'מסעדות', sub: 'אוכל' },
+    { txId: 'd-a7', date: '2026-07-13', amount: 690, business: 'Swarovski Kristallwelten', category: 'בילויים', sub: 'אטרקציות' },
+    { txId: 'd-a8', date: '2026-07-15', amount: 840, business: 'Dachstein Krippenstein', category: 'בילויים', sub: 'אטרקציות' },
+    { txId: 'd-a9', date: '2026-07-11', amount: 1320, business: 'Sixt', category: 'תחבורה', sub: 'תחבורה' },
+    { txId: 'd-a10', date: '2026-07-16', amount: 180, business: 'ÖBB', category: 'תחבורה', sub: 'תחבורה' },
+  ],
+}];
