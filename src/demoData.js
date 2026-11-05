@@ -36,6 +36,7 @@ export const demoFamily = {
     { id: 'i2', type: 'ביטוח חיים', company: 'הראל', coverage: 'ריסק — 1,200,000 ₪', insured: 'איתי', premium: 71, period: 'month', from: '2023-02-01', to: '2043-02-01', policy: '0123456790', note: '' },
     { id: 'i3', type: 'ביטוח בריאות', company: 'מגדל', coverage: 'ניתוחים בחו״ל, השתלות ותרופות מחוץ לסל', insured: 'כולנו', premium: 148, period: 'month', from: '2024-06-01', to: '', policy: 'MG-55821047', note: '' },
     { id: 'i4', type: 'רכב', company: 'כלל', coverage: 'מקיף + חובה', insured: 'כולנו', premium: 3400, period: 'year', from: '2026-01-15', to: '2027-01-14', policy: 'CL-7730192', note: 'לבדוק הצעות מחיר בדצמבר' },
+    { id: 'i6', type: 'ביטוח לחיית מחמד', company: 'חיותא', coverage: 'וטרינר, ניתוחים ואשפוז', insured: 'לוקי', premium: 89, period: 'month', from: '2025-03-01', to: '', policy: 'HY-104422', note: '' },
     { id: 'i5', type: 'דירה', company: 'מנורה', coverage: 'מבנה ותכולה', insured: 'כולנו', premium: 95, period: 'month', from: '2025-11-20', to: '2026-11-19', policy: 'MN-3318840', note: '' },
   ],
   recurring: (() => {

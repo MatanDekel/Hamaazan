@@ -3,8 +3,11 @@ import { Modal, DateInput } from './ui';
 import { ils, dateFmt, toDate } from './calc';
 import { todayISO, uid } from './constants';
 
-export const INS_TYPES = ['ביטוח חיים', 'ביטוח בריאות', 'מחלות קשות', 'סיעודי', 'תאונות אישיות', 'רכב', 'דירה', 'אחר'];
+export const PET = 'ביטוח לחיית מחמד';
+export const INS_TYPES = ['ביטוח חיים', 'ביטוח בריאות', 'מחלות קשות', 'סיעודי', 'תאונות אישיות', 'רכב', 'דירה', PET, 'אחר'];
 export const INS_COMPANIES = ['הראל', 'מנורה', 'מגדל', 'כלל', 'הפניקס', 'אחר'];
+export const PET_COMPANIES = ['חיותא', 'הפניקס', 'פרינדס', 'אחר'];
+const companiesFor = (type) => (type === PET ? PET_COMPANIES : INS_COMPANIES);
 
 const monthlyOf = (p) => (p.period === 'year' ? (+p.premium || 0) / 12 : +p.premium || 0);
 const daysTo = (s) => Math.round((toDate(s) - toDate(todayISO())) / 86400000);
@@ -21,7 +24,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
   const [who, setWho] = useState('all');
   const [copied, setCopied] = useState('');
 
-  const shown = items.filter((p) => who === 'all' || p.insured === who || p.insured === 'כולנו');
+  const shown = items.filter((p) => who === 'all' || p.insured === who || p.insured === 'כולנו' || p.type === PET);
   const active = shown.filter((p) => statusOf(p).key !== 'ended');
   const monthly = active.reduce((t, p) => t + monthlyOf(p), 0);
   const byType = [...new Set([...INS_TYPES, ...shown.map((p) => p.type)])]
@@ -77,7 +80,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
                         </div>
                       </div>
                       <dl className="ins-meta">
-                        <div><dt>מבוטח</dt><dd>{p.insured || '—'}</dd></div>
+                        <div><dt>{p.type === PET ? 'החיה' : 'מבוטח'}</dt><dd>{p.insured || '—'}</dd></div>
                         <div><dt>תקופה</dt><dd><bdi>{p.from ? dateFmt(p.from) : '—'}</bdi> עד <bdi>{p.to ? dateFmt(p.to) : 'ללא תאריך סיום'}</bdi></dd></div>
                         <div><dt>מספר פוליסה</dt><dd>
                           {p.policy ? (
@@ -117,7 +120,9 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
   const [err, setErr] = useState('');
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const customType = !INS_TYPES.slice(0, -1).includes(f.type);
-  const customCompany = !INS_COMPANIES.slice(0, -1).includes(f.company);
+  const isPet = f.type === PET;
+  const companies = companiesFor(f.type);
+  const customCompany = !companies.slice(0, -1).includes(f.company);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -135,24 +140,39 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
     <Modal title={initial ? 'עריכת ביטוח' : 'ביטוח חדש'} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <label>סוג ביטוח
-          <select value={customType ? 'אחר' : f.type} onChange={(e) => setF((s) => ({ ...s, type: e.target.value === 'אחר' ? '' : e.target.value }))}>
+          <select value={customType ? 'אחר' : f.type} onChange={(e) => {
+            const type = e.target.value === 'אחר' ? '' : e.target.value;
+            setF((s) => {
+              const list = companiesFor(type);
+              const wasPet = s.type === PET, nowPet = type === PET;
+              return {
+                ...s, type,
+                company: list.includes(s.company) && s.company !== 'אחר' ? s.company : list[0],
+                insured: wasPet !== nowPet ? (nowPet ? '' : owners[0] || '') : s.insured,
+              };
+            });
+          }}>
             {INS_TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
         </label>
         {customType && <label>איזה ביטוח<input value={f.type} onChange={set('type')} placeholder="למשל: ביטוח נסיעות" /></label>}
         <label>חברה
           <select value={customCompany ? 'אחר' : f.company} onChange={(e) => setF((s) => ({ ...s, company: e.target.value === 'אחר' ? '' : e.target.value }))}>
-            {INS_COMPANIES.map((c) => <option key={c}>{c}</option>)}
+            {companies.map((c) => <option key={c}>{c}</option>)}
           </select>
         </label>
         {customCompany && <label>שם החברה<input value={f.company} onChange={set('company')} /></label>}
-        <label className="full">סוג הכיסוי<input value={f.coverage} onChange={set('coverage')} placeholder="למשל: ריסק — 1,000,000 ₪ / ניתוחים בחו״ל ותרופות" /></label>
-        <label>מבוטח
-          <select value={f.insured} onChange={set('insured')}>
-            {owners.map((o) => <option key={o}>{o}</option>)}
-            <option>כולנו</option>
-          </select>
-        </label>
+        <label className="full">סוג הכיסוי<input value={f.coverage} onChange={set('coverage')} placeholder={isPet ? 'למשל: וטרינר, ניתוחים, תרופות' : 'למשל: ריסק — 1,000,000 ₪ / ניתוחים בחו״ל ותרופות'} /></label>
+        {isPet ? (
+          <label>שם החיה<input value={f.insured} onChange={set('insured')} placeholder="שם הכלב / החתול" /></label>
+        ) : (
+          <label>מבוטח
+            <select value={f.insured} onChange={set('insured')}>
+              {owners.map((o) => <option key={o}>{o}</option>)}
+              <option>כולנו</option>
+            </select>
+          </label>
+        )}
         <label>מספר פוליסה<input value={f.policy} onChange={set('policy')} dir="ltr" inputMode="text" /></label>
         <label>תשלום (₪)<input type="number" min="0" step="0.01" value={f.premium} onChange={set('premium')} /></label>
         <label>כל
