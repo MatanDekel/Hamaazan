@@ -19,7 +19,7 @@ function statusOf(p) {
   return { key: 'active', text: 'פעיל' };
 }
 
-// ביטוח שמתחדש כל שנה נכנס אוטומטית להוצאות התקופתיות, בתאריך הסיום שלו
+// ביטוח שמתחדש כל שנה נכנס אוטומטית להוצאות העתידיות, בתאריך הסיום שלו
 export function syncRecurring(insList, recurring = []) {
   const keep = recurring.filter((r) => r.source !== 'insurance' || insList.some((p) => p.renews && `ins-${p.id}` === r.id));
   const fromIns = insList.filter((p) => p.renews && p.period === 'year').map((p) => ({
@@ -42,7 +42,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
     .filter((g) => g.list.length);
 
   const save = (p) => onSave(p.id && items.some((x) => x.id === p.id) ? items.map((x) => (x.id === p.id ? p : x)) : [...items, { ...p, id: uid() }]);
-  // onSave מקבל את הרשימה החדשה; הסנכרון להוצאות התקופתיות נעשה ב-App
+  // onSave מקבל את הרשימה החדשה; הסנכרון להוצאות העתידיות נעשה ב-App
   const remove = (p) => confirm(`למחוק את "${p.type} — ${p.company}"?`) && onSave(items.filter((x) => x.id !== p.id));
   const copy = async (num) => {
     try { await navigator.clipboard.writeText(num); setCopied(num); setTimeout(() => setCopied(''), 1500); } catch { /* ignore */ }
@@ -101,7 +101,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
                           ) : '—'}
                         </dd></div>
                       </dl>
-                      {p.renews && p.period === 'year' && <p className="ins-renew">מתחדש כל שנה · מופיע בהוצאות התקופתיות ב-<bdi>{dateFmt(p.to || p.from)}</bdi></p>}
+                      {p.renews && p.period === 'year' && <p className="ins-renew">מתחדש כל שנה · מופיע בהוצאות העתידיות ב-<bdi>{dateFmt(p.to || p.from)}</bdi></p>}
                       {p.note && <p className="ins-note">{p.note}</p>}
                       <div className="ins-foot">
                         <span className={`ins-status ${st.key}`}>{st.text}</span>
@@ -197,7 +197,7 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
         {f.period === 'year' ? (
           <label className="check full">
             <input type="checkbox" checked={!!f.renews} onChange={(e) => setF((s) => ({ ...s, renews: e.target.checked }))} />
-            <span>מתחדש כל שנה<small>יתווסף להוצאות התקופתיות בלשונית הוצאות, בתאריך הסיום — כדי שתדעו להתכונן לחידוש</small></span>
+            <span>מתחדש כל שנה<small>יתווסף להוצאות העתידיות בלשונית הוצאות, בתאריך הסיום — כדי שתדעו להתכונן לחידוש</small></span>
           </label>
         ) : <span className="full" />}
         <label>מתאריך<DateInput value={f.from} onChange={set('from')} /></label>

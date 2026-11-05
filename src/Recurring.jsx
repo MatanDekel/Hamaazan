@@ -10,7 +10,7 @@ const INTERVALS = [
 const intervalLabel = (n) => INTERVALS.find(([k]) => k === n)?.[1] ?? `כל ${n} חודשים`;
 
 const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-function addMonthsISO(s, n) {
+export function addMonthsISO(s, n) {
   const d = toDate(s);
   const day = d.getDate();
   const r = new Date(d.getFullYear(), d.getMonth() + n, 1);
@@ -23,6 +23,22 @@ export function nextDue(item, today = todayISO()) {
   while (d < today && k < 600) { k++; d = addMonthsISO(item.date, item.every * k); }
   return d;
 }
+// כל המופעים של הוצאות עתידיות בחודש מסוים (yyyy-mm)
+export function dueInMonth(items, month) {
+  const today = todayISO();
+  const out = [];
+  items.forEach((it) => {
+    const first = nextDue(it, today);
+    for (let k = 0; k < 200; k++) {
+      const d = addMonthsISO(first, it.every * k);
+      const m = d.slice(0, 7);
+      if (m > month) break;
+      if (m === month) out.push({ ...it, due: d });
+    }
+  });
+  return out.sort((a, b) => a.due.localeCompare(b.due));
+}
+
 const daysUntil = (s) => Math.round((toDate(s) - toDate(todayISO())) / 86400000);
 function whenText(s) {
   const n = daysUntil(s);
@@ -68,14 +84,14 @@ export default function Recurring({ items = [], onSave }) {
     <section className="recurring">
       <div className="rec-head">
         <div>
-          <h2 className="sec">הוצאות תקופתיות</h2>
+          <h2 className="sec">הוצאות עתידיות</h2>
           <p className="muted">הוצאות שלא מגיעות כל חודש — ביטוח רכב, טסט, רופא שיניים — כדי לדעת מה מגיע ב-3 החודשים הקרובים ולהתכונן.</p>
         </div>
-        <button className="btn primary" onClick={() => setEditing('new')}>הוספת הוצאה תקופתית</button>
+        <button className="btn primary" onClick={() => setEditing('new')}>הוספת הוצאה עתידית</button>
       </div>
 
       {!rows.length ? (
-        <div className="empty small"><p>עוד אין הוצאות תקופתיות. הוסיפו את הראשונה ותראו מתי היא מגיעה.</p></div>
+        <div className="empty small"><p>עוד אין הוצאות עתידיות. הוסיפו את הראשונה ותראו מתי היא מגיעה.</p></div>
       ) : (
         <>
           <div className="upcoming">
@@ -84,7 +100,7 @@ export default function Recurring({ items = [], onSave }) {
               <strong>{ils(upcomingTotal)}</strong>
               <small className="muted">עד {dateFmt(horizon)}</small>
             </div>
-            {!byMonth.length && <p className="muted">אין הוצאות תקופתיות ב-3 החודשים הקרובים.</p>}
+            {!byMonth.length && <p className="muted">אין הוצאות עתידיות ב-3 החודשים הקרובים.</p>}
             {byMonth.map((g) => (
               <div key={g.m} className="up-month">
                 <div className="up-month-head"><h3>{monthLong(g.m)}</h3><span className="num">{ils(g.total)}</span></div>
@@ -102,7 +118,7 @@ export default function Recurring({ items = [], onSave }) {
           </div>
 
           <button className="link all-toggle" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>
-            {showAll ? 'הסתרת הרשימה המלאה' : `כל ההוצאות התקופתיות (${rows.length}) — עריכה ומחיקה`}
+            {showAll ? 'הסתרת הרשימה המלאה' : `כל ההוצאות העתידיות (${rows.length}) — עריכה ומחיקה`}
           </button>
           {showAll && (
             <ul className="rec-list">
@@ -157,7 +173,7 @@ function RecurringForm({ initial, onClose, onSave }) {
   };
 
   return (
-    <Modal title={initial ? 'עריכת הוצאה תקופתית' : 'הוצאה תקופתית חדשה'} onClose={onClose}>
+    <Modal title={initial ? 'עריכת הוצאה עתידית' : 'הוצאה עתידית חדשה'} onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <label className="full">שם<input value={f.name} onChange={set('name')} placeholder="למשל: ביטוח רכב" autoFocus /></label>
         <label>סכום (₪)<input type="number" min="0" value={f.amount} onChange={set('amount')} /></label>

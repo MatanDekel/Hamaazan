@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { monthLong, PALETTE, fullAvg } from './expenseCalc';
-import { ils, pct } from './calc';
+import { ils, pct, dateFmt } from './calc';
 import { uid } from './constants';
-import Recurring from './Recurring';
+import Recurring, { dueInMonth } from './Recurring';
 import { Modal, DateInput } from './ui';
 import { usePlans, BulkAssign } from './Plans';
 import { todayISO } from './constants';
@@ -26,7 +26,7 @@ export default function Expenses({ exp, model, api, groups, onSaveGroups, recurr
       </div>
 
       <LoadState exp={exp} model={model} />
-      {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} onEdit={setEditing} />}
+      {model && mode === 'month' && <MonthView model={model} sel={sel} setSel={setSel} onManage={() => setMode('manage')} onEdit={setEditing} recurring={recurring || []} />}
       {editing && model && (
         <ManualForm initial={editing === 'new' ? null : editing} model={model}
           defaultDate={sel && sel !== model.months[model.months.length - 1] ? `${sel}-15` : todayISO()}
@@ -46,7 +46,7 @@ export function LoadState({ exp, model }) {
 
 /* ---------- month view ---------- */
 
-function MonthPicker({ months, month, onChange }) {
+function MonthPicker({ months, month, onChange, current }) {
   const i = months.indexOf(month);
   const last = months.length - 1;
   const today = new Date();
@@ -59,7 +59,7 @@ function MonthPicker({ months, month, onChange }) {
         <select value={month} onChange={(e) => onChange(e.target.value)} aria-label="בחירת חודש">
           {[...months].reverse().map((m) => <option key={m} value={m}>{monthLong(m)}</option>)}
         </select>
-        <span className="mp-sub">{i === last ? `החודש הנוכחי — נכון ל-${today.getDate()}.${today.getMonth() + 1}` : 'חודש מלא'}</span>
+        <span className="mp-sub">{month === current ? `החודש הנוכחי — נכון ל-${today.getDate()}/${today.getMonth() + 1}` : month > current ? 'חודש עתידי — מה צפוי' : 'חודש מלא'}</span>
       </div>
       <button className="mp-arrow" disabled={i >= last} onClick={() => onChange(months[i + 1])} aria-label="חודש הבא" title="חודש הבא">
         <Chevron dir="left" />
@@ -77,7 +77,57 @@ function Chevron({ dir }) {
   );
 }
 
-function MonthView({ model, sel, setSel, onManage, onEdit }) {
+// חודשים קדימה: 12 חודשים אחרי החודש הנוכחי
+function futureMonths(current, n = 12) {
+  const [y, m] = current.split('-').map(Number);
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(y, m + i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+function MonthView({ model, sel, setSel, onManage, onEdit, recurring }) {
+  const current = model.months[model.months.length - 1];
+  const allMonths = [...model.months, ...futureMonths(current)];
+  if (sel && sel > current) {
+    return (
+      <>
+        <MonthPicker months={allMonths} current={current} month={sel} onChange={setSel} />
+        <FutureMonth model={model} month={sel} recurring={recurring} />
+      </>
+    );
+  }
+  return <PastMonth model={model} sel={sel} setSel={setSel} onManage={onManage} onEdit={onEdit} allMonths={allMonths} current={current} />;
+}
+
+function FutureMonth({ model, month, recurring }) {
+  const due = dueInMonth(recurring, month);
+  const dueTotal = due.reduce((t, d) => t + d.amount, 0);
+  const avg = fullAvg(model.total);
+  return (
+    <>
+      <dl className="month-summary">
+        <div><dt>הוצאות עתידיות ב{monthLong(month)}</dt><dd>{ils(dueTotal)}</dd></div>
+        <div><dt>הוצאה חודשית ממוצעת</dt><dd>{ils(avg)}</dd></div>
+        <div><dt>הערכה לכל החודש</dt><dd>{ils(avg + dueTotal)}</dd></div>
+      </dl>
+      <p className="hint">זה חודש עתידי, אז עוד אין בו עסקאות. ההערכה היא הממוצע החודשי שלכם ועוד ההוצאות העתידיות שנופלות בחודש הזה.</p>
+      <h2 className="sec">מה מגיע ב{monthLong(month)}</h2>
+      {due.length ? (
+        <ul className="tx-list future-list">
+          {due.map((d) => (
+            <li key={d.id + d.due}>
+              <span className="tx-biz"><span>{d.name}{d.source === 'insurance' && <span className="tag">ביטוח</span>}</span><small>{dateFmt(d.due)}{d.note ? ` · ${d.note}` : ''}</small></span>
+              <span className="num">{ils(d.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="muted">אין הוצאות עתידיות בחודש הזה.</p>}
+    </>
+  );
+}
+
+function PastMonth({ model, sel, setSel, onManage, onEdit, allMonths, current }) {
   const { months, list, total, income } = model;
   const month = sel && months.includes(sel) ? sel : months[months.length - 2];
   const i = months.indexOf(month);
@@ -92,7 +142,7 @@ function MonthView({ model, sel, setSel, onManage, onEdit }) {
 
   return (
     <>
-      <MonthPicker months={months} month={month} onChange={(m) => { setSel(m); setOpen(null); }} />
+      <MonthPicker months={allMonths} current={current} month={month} onChange={(m) => { setSel(m); setOpen(null); }} />
 
       <dl className="month-summary">
         <div><dt>הוצאות ב{monthLong(month)}</dt><dd>{ils(spent)}</dd></div>
