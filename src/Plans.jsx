@@ -219,7 +219,7 @@ export default function Plans({ plans, api }) {
                 <li key={p.id}>
                   <button className="plan-card" onClick={() => setOpenId(p.id)}>
                     <span className="pc-name">{p.name}</span>
-                    <span className="pc-meta">{p.from ? `${dateFmt(p.from)}${p.to ? ` – ${dateFmt(p.to)}` : ''} · ` : ''}{(p.items || []).length} עסקאות</span>
+                    <span className="pc-meta">{p.from ? <><bdi>{dateFmt(p.from)}</bdi>{p.to ? <> עד <bdi>{dateFmt(p.to)}</bdi></> : ''} · </> : ''}{(p.items || []).length} עסקאות</span>
                     <strong className="pc-sum">{ils(spent)}</strong>
                     {p.budget > 0 && (
                       <>
@@ -263,7 +263,7 @@ function PlanDetail({ plan, api, onBack, onEdit }) {
       <header className="detail-head">
         <div>
           <h1>{plan.name}</h1>
-          {plan.from && <p className="meta">{dateFmt(plan.from)}{plan.to ? ` – ${dateFmt(plan.to)}` : ''}</p>}
+          {plan.from && <p className="meta"><bdi>{dateFmt(plan.from)}</bdi>{plan.to ? <> עד <bdi>{dateFmt(plan.to)}</bdi></> : ''}</p>}
         </div>
         <div className="detail-actions"><button className="btn ghost" onClick={onEdit}>עריכה</button></div>
       </header>

@@ -476,3 +476,32 @@ body::before { background: color-mix(in srgb, #ffffff 88%, transparent); }
 .stats > div, .month-summary > div, .panel, .cap, .filter-bar, .snap-form, .table-wrap, .fund-list, .month-cats, .plan-subs, .merchants, .rec-list, .up-month, .plan-card {
   background: linear-gradient(180deg, #ffffff, #fcfbf8);
 }
+
+/* insurance */
+.ins-filter { margin-bottom: .25rem; }
+.ins-group .sec { margin-top: 1.75rem; }
+.ins-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; }
+.ins-card { background: linear-gradient(180deg, #ffffff, #fcfbf8); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.1rem 1.2rem .8rem; display: flex; flex-direction: column; gap: .75rem; }
+.ins-card.st-ended { opacity: .6; }
+.ins-card.st-soon { border-color: color-mix(in srgb, var(--warn) 60%, var(--line)); }
+.ins-top { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.ins-top > div:first-child { display: flex; flex-direction: column; gap: .15rem; }
+.ins-company { font-weight: 700; font-size: 1.15rem; }
+.ins-cover { color: var(--ink-2); font-size: .92rem; }
+.ins-price { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+.ins-price strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.ins-price small { color: var(--ink-3); font-size: .8rem; }
+.ins-meta { display: grid; gap: .35rem; margin: 0; font-size: .9rem; }
+.ins-meta > div { display: flex; justify-content: space-between; gap: 1rem; }
+.ins-meta dt { color: var(--ink-3); }
+.ins-meta dd { margin: 0; text-align: end; }
+.policy { display: inline-flex; align-items: center; gap: .5rem; border: 1px dashed var(--line); background: var(--track); border-radius: 8px; padding: .15rem .5rem; cursor: pointer; font: inherit; color: var(--ink); font-variant-numeric: tabular-nums; }
+.policy small { color: var(--accent); font-weight: 600; font-size: .75rem; }
+.ins-note { margin: 0; font-size: .85rem; color: var(--ink-2); background: var(--track); border-radius: 10px; padding: .5rem .7rem; }
+.ins-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: .6rem; }
+.ins-foot > span:last-child { display: flex; gap: .4rem; align-items: center; }
+.ins-status { font-size: .8rem; font-weight: 700; padding: .15rem .6rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.ins-status.soon { background: color-mix(in srgb, var(--warn) 22%, transparent); color: #8a5a22; }
+.ins-status.ended { background: var(--track); color: var(--ink-3); }
+.ins-status.future { background: var(--track); color: var(--ink-2); }
+.form label > .seg { align-self: flex-start; }

@@ -6,6 +6,7 @@ import { demoTransactions } from './demoExpenses';
 import Expenses from './Expenses';
 import Dashboards from './Dashboards';
 import Plans, { PlansProvider } from './Plans';
+import Insurance from './Insurance';
 import { useExpenseData } from './expenseData';
 import { buildModel } from './expenseCalc';
 import Login from './Login';
@@ -96,6 +97,7 @@ function Shell({ family, funds, manual = [], plans = [], api, user, demo, onLogo
           <button className={tab === 'expenses' ? 'on' : ''} onClick={() => go('expenses')}>הוצאות</button>
           <button className={tab === 'dash' ? 'on' : ''} onClick={() => go('dash')}>דשבורדים</button>
           <button className={tab === 'plans' ? 'on' : ''} onClick={() => go('plans')}>תוכניות</button>
+          <button className={tab === 'ins' ? 'on' : ''} onClick={() => go('ins')}>ביטוחים</button>
           <button className={tab === 'family' ? 'on' : ''} onClick={() => go('family')}>משפחה</button>
         </nav>
         <div className="me">
@@ -114,6 +116,7 @@ function Shell({ family, funds, manual = [], plans = [], api, user, demo, onLogo
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}
         {tab === 'plans' && <Plans plans={plans} api={api} />}
+        {tab === 'ins' && <Insurance items={family.insurance || []} owners={family.owners || []} onSave={(list) => api.updateFamily({ insurance: list })} />}
         {tab === 'family' && <Family family={family} api={api} myEmail={user.email?.toLowerCase()} demo={demo} />}
       </main>
 
