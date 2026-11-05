@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from './ui';
+import { Modal, DateInput } from './ui';
 import { ils, dateFmt, toDate } from './calc';
 import { monthLong } from './expenseCalc';
 import { todayISO, uid } from './constants';
@@ -164,7 +164,7 @@ function RecurringForm({ initial, onClose, onSave }) {
           </select>
         </label>
         {f.custom && <label>כל כמה חודשים<input type="number" min="1" max="120" value={f.every} onChange={set('every')} /></label>}
-        <label>התשלום הבא<input type="date" value={f.date} onChange={set('date')} /></label>
+        <label>התשלום הבא<DateInput value={f.date} onChange={set('date')} /></label>
         <label className="full">הערה<input value={f.note} onChange={set('note')} placeholder="לא חובה" /></label>
         {err && <p className="err full">{err}</p>}
         <div className="form-actions full">

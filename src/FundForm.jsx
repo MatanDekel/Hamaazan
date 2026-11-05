@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { COMPANIES, KINDS, TRACKS, companiesFor, todayISO, uid } from './constants';
-import { Modal } from './ui';
+import { Modal, DateInput } from './ui';
 
 export default function FundForm({ initial, owners, onSave, onClose }) {
   const isNew = !initial;
@@ -64,7 +64,7 @@ export default function FundForm({ initial, owners, onSave, onClose }) {
           <span>חיסכון משותף<small>{f.shared ? `רשום על שם ${f.owner || '—'}, והשני מוטב` : 'רשום ושייך רק למי שנבחר ב"אצל מי"'}</small></span>
         </label>
         <label>כמה הופקד עד היום (₪)<input type="number" min="0" value={f.investedSoFar} onChange={set('investedSoFar')} /></label>
-        <label>נכון לתאריך<input type="date" value={f.startDate} onChange={set('startDate')} /></label>
+        <label>נכון לתאריך<DateInput value={f.startDate} onChange={set('startDate')} /></label>
         <label>הפקדה חודשית (₪)<input type="number" min="0" value={f.monthlyDeposit} onChange={set('monthlyDeposit')} /></label>
         {isNew && (
           <label>יתרה נוכחית בקופה (₪)

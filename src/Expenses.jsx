@@ -3,7 +3,7 @@ import { monthLong, PALETTE, fullAvg } from './expenseCalc';
 import { ils, pct } from './calc';
 import { uid } from './constants';
 import Recurring from './Recurring';
-import { Modal } from './ui';
+import { Modal, DateInput } from './ui';
 import { usePlans, BulkAssign } from './Plans';
 import { todayISO } from './constants';
 
@@ -350,7 +350,7 @@ function ManualForm({ initial, model, defaultDate, onClose, api }) {
           <button type="button" className={!f.income ? 'on' : ''} onClick={() => setF((s) => ({ ...s, income: false, category: '' }))}>הוצאה</button>
           <button type="button" className={f.income ? 'on' : ''} onClick={() => setF((s) => ({ ...s, income: true, category: '' }))}>הכנסה</button>
         </div>
-        <label>תאריך<input type="date" value={f.date} onChange={set('date')} /></label>
+        <label>תאריך<DateInput value={f.date} onChange={set('date')} /></label>
         <label>סכום (₪)<input type="number" min="0" step="0.01" value={f.amount} onChange={set('amount')} autoFocus /></label>
         <label className="full">תיאור<input value={f.business} onChange={set('business')} placeholder="למשל: שוק — מזומן" /></label>
         <label className={isNew ? '' : 'full'}>קטגוריה

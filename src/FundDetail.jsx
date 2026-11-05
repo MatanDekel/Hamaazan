@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { analyzeFund, ils, pct, tone, dateFmt, monthsBetween } from './calc';
 import { todayISO, uid, kindOf } from './constants';
-import { AllocationBar, GrowthChart } from './ui';
+import { AllocationBar, GrowthChart, DateInput } from './ui';
 import FundForm from './FundForm';
 
 export default function FundDetail({ fund, family, api, onBack }) {
@@ -81,7 +81,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
 
       <form className="snap-form" onSubmit={addSnap}>
         <h2>עדכון יתרה</h2>
-        <label>תאריך<input type="date" value={snap.date} onChange={(e) => setSnap({ ...snap, date: e.target.value })} /></label>
+        <label>תאריך<DateInput value={snap.date} onChange={(e) => setSnap({ ...snap, date: e.target.value })} /></label>
         <label>יתרה כוללת (₪)<input type="number" min="0" value={snap.balance} onChange={(e) => setSnap({ ...snap, balance: e.target.value })} /></label>
         <label>הפקדות מאז העדכון הקודם (₪)
           <input type="number" min="0" value={snap.deposits} onChange={(e) => setSnap({ ...snap, deposits: e.target.value })}
@@ -93,7 +93,7 @@ export default function FundDetail({ fund, family, api, onBack }) {
 
       <form className="snap-form lump-form" onSubmit={addLump}>
         <h2>הפקדה חד-פעמית</h2>
-        <label>תאריך<input type="date" value={lump.date} onChange={(e) => setLump({ ...lump, date: e.target.value })} /></label>
+        <label>תאריך<DateInput value={lump.date} onChange={(e) => setLump({ ...lump, date: e.target.value })} /></label>
         <label>סכום (₪)<input type="number" min="0" value={lump.amount} onChange={(e) => setLump({ ...lump, amount: e.target.value })} /></label>
         <button className="btn ghost">הוספת הפקדה</button>
         {lumps.length > 0 && (

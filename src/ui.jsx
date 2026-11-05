@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { TRACKS } from './constants';
 import { ils, dateFmt } from './calc';
 
@@ -59,5 +60,58 @@ export function GrowthChart({ rows }) {
         <span className="muted">שיא {ils(Math.max(...rows.map((r) => r.balance)))}</span>
       </figcaption>
     </figure>
+  );
+}
+
+/*
+  שדה תאריך שמציג תמיד dd/mm/yyyy (שדה תאריך רגיל של הדפדפן מוצג לפי שפת המכשיר, ולפעמים באמריקאית).
+  הערך נשאר בפורמט ISO (yyyy-mm-dd), ו-onChange מקבל אירוע עם target.value כמו קודם.
+*/
+const toDisplay = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
+function parseDisplay(txt) {
+  const m = txt.trim().match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2}|\d{4})$/);
+  if (!m) return null;
+  let [, d, mo, y] = m;
+  if (y.length === 2) y = '20' + y;
+  const dt = new Date(+y, +mo - 1, +d);
+  if (dt.getFullYear() !== +y || dt.getMonth() !== +mo - 1 || dt.getDate() !== +d) return null;
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+export function DateInput({ value, onChange, ...rest }) {
+  const [txt, setTxt] = useState(toDisplay(value));
+  const native = useRef(null);
+  useEffect(() => { setTxt(toDisplay(value)); }, [value]);
+  const emit = (iso) => onChange({ target: { value: iso } });
+
+  const onType = (e) => {
+    let v = e.target.value.replace(/[^\d/.\-]/g, '');
+    // הוספת לוכסנים אוטומטית בזמן הקלדה: 0311 → 03/11/
+    if (/^[\d/]*$/.test(v)) {
+      const d = v.replace(/\D/g, '').slice(0, 8);
+      v = d.length > 4 ? `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}` : d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+    }
+    setTxt(v);
+    const iso = parseDisplay(v);
+    if (iso && v.length >= 8) emit(iso);
+  };
+  const onBlur = () => {
+    const iso = parseDisplay(txt);
+    if (iso) { emit(iso); setTxt(toDisplay(iso)); } else setTxt(toDisplay(value));
+  };
+  const openPicker = () => {
+    const el = native.current;
+    if (!el) return;
+    try { el.showPicker(); } catch { el.focus(); el.click(); }
+  };
+
+  return (
+    <span className="date-input">
+      <input {...rest} type="text" inputMode="numeric" placeholder="dd/mm/yyyy" value={txt} onChange={onType} onBlur={onBlur} dir="ltr" />
+      <button type="button" className="date-btn" onClick={openPicker} aria-label="בחירה מלוח שנה">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
+      </button>
+      <input ref={native} type="date" className="date-native" tabIndex={-1} aria-hidden="true" value={value || ''} onChange={(e) => e.target.value && emit(e.target.value)} />
+    </span>
   );
 }

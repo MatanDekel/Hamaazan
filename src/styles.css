@@ -471,3 +471,10 @@ input, select { border-radius: 12px; border-color: var(--line); }
 .bulk-subs button { padding: .25rem .75rem; font-size: .85rem; }
 .bulk-actions { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 0 calc(.25rem + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); margin-top: .5rem; }
 .excluded { background: var(--surface); }
+.date-input { position: relative; display: block; }
+.date-input input[type="text"] { padding-inline-start: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+.date-btn { position: absolute; inset-inline-start: .35rem; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; display: grid; place-items: center; border: 0; background: none; color: var(--ink-3); cursor: pointer; border-radius: 8px; }
+.date-btn:hover { color: var(--accent); background: var(--accent-soft); }
+.date-native { position: absolute; inset-inline-start: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.date-input input[type="text"] { padding-inline-start: .7rem; padding-left: 2.6rem; padding-right: .7rem; }
+.date-btn { inset-inline-start: auto; left: .35rem; right: auto; }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react';
-import { Modal } from './ui';
+import { Modal, DateInput } from './ui';
 import { ils, dateFmt } from './calc';
 import { PALETTE } from './expenseCalc';
 
@@ -331,8 +331,8 @@ function PlanForm({ initial, onClose, onSave, onDelete }) {
         <label className="full">שם<input value={f.name} onChange={set('name')} placeholder="למשל: טיסה לאוסטריה" autoFocus /></label>
         <label>תקציב (₪)<input type="number" min="0" value={f.budget} onChange={set('budget')} placeholder="לא חובה" /></label>
         <span />
-        <label>מתאריך<input type="date" value={f.from} onChange={set('from')} /></label>
-        <label>עד תאריך<input type="date" value={f.to} onChange={set('to')} /></label>
+        <label>מתאריך<DateInput value={f.from} onChange={set('from')} /></label>
+        <label>עד תאריך<DateInput value={f.to} onChange={set('to')} /></label>
         <fieldset className="full">
           <legend>תתי-קטגוריות</legend>
           <ul className="chips">
