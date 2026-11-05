@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, DateInput } from './ui';
 import { ils, dateFmt, toDate } from './calc';
 import { todayISO, uid } from './constants';
@@ -29,7 +29,20 @@ export function syncRecurring(insList, recurring = []) {
   return [...keep.filter((r) => !fromIns.some((x) => x.id === r.id)), ...fromIns];
 }
 
-export default function Insurance({ items = [], owners = [], onSave }) {
+// אם בטעות נשמרו שני ביטוחים עם אותו מזהה, עריכה של אחד הייתה משנה את שניהם — מפרידים ביניהם
+function dedupe(list) {
+  const seen = new Set();
+  let changed = false;
+  const out = list.map((p) => {
+    if (!p.id || seen.has(p.id)) { changed = true; const id = uid(); seen.add(id); return { ...p, id }; }
+    seen.add(p.id); return p;
+  });
+  return { out, changed };
+}
+
+export default function Insurance({ items: raw = [], owners = [], onSave }) {
+  const { out: items, changed } = useMemo(() => dedupe(raw), [raw]);
+  useEffect(() => { if (changed) onSave(items); }, [changed]); // eslint-disable-line react-hooks/exhaustive-deps
   const [editing, setEditing] = useState(null);
   const [who, setWho] = useState('all');
   const [copied, setCopied] = useState('');
@@ -41,7 +54,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
     .map((t) => ({ t, list: shown.filter((p) => p.type === t).sort((a, b) => statusOf(a).key.localeCompare(statusOf(b).key)) }))
     .filter((g) => g.list.length);
 
-  const save = (p) => onSave(p.id && items.some((x) => x.id === p.id) ? items.map((x) => (x.id === p.id ? p : x)) : [...items, { ...p, id: uid() }]);
+  const save = (p, editingId) => onSave(editingId ? items.map((x) => (x.id === editingId ? { ...p, id: editingId } : x)) : [...items, { ...p, id: uid() }]);
   // onSave מקבל את הרשימה החדשה; הסנכרון להוצאות העתידיות נעשה ב-App
   const remove = (p) => confirm(`למחוק את "${p.type} — ${p.company}"?`) && onSave(items.filter((x) => x.id !== p.id));
   const copy = async (num) => {
@@ -119,7 +132,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
         </>
       )}
 
-      {editing && <InsuranceForm initial={editing === 'new' ? null : editing} owners={owners} onClose={() => setEditing(null)} onSave={save} />}
+      {editing && <InsuranceForm key={editing === 'new' ? 'new' : editing.id} initial={editing === 'new' ? null : editing} owners={owners} onClose={() => setEditing(null)} onSave={(p) => save(p, editing === 'new' ? null : editing.id)} />}
     </section>
   );
 }
@@ -144,7 +157,8 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
     if (f.from && f.to && f.to < f.from) return setErr('תאריך הסיום לפני תאריך ההתחלה.');
     if (f.renews && f.period === 'year' && !f.to) return setErr('לביטוח שמתחדש כל שנה צריך תאריך סיום — זה תאריך החידוש.');
     try {
-      await onSave({ ...(initial?.id ? { id: initial.id } : {}), ...f, type: f.type.trim(), company: f.company.trim(), premium: +f.premium, coverage: f.coverage.trim(), policy: f.policy.trim(), note: f.note.trim() });
+      const { id: _ignore, ...fields } = f;
+      await onSave({ ...fields, type: f.type.trim(), company: f.company.trim(), premium: +f.premium, coverage: f.coverage.trim(), policy: f.policy.trim(), note: f.note.trim() });
       onClose();
     } catch (ex) { setErr('השמירה נכשלה: ' + ex.message); }
   };
@@ -186,7 +200,7 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
             </select>
           </label>
         )}
-        <label>מספר פוליסה<input value={f.policy} onChange={set('policy')} dir="ltr" inputMode="text" /></label>
+        <label>מספר פוליסה<input value={f.policy} onChange={set('policy')} dir="ltr" inputMode="text" autoComplete="off" autoCorrect="off" spellCheck={false} name={`policy-${initial?.id || 'new'}`} /></label>
         <label>תשלום (₪)<input type="number" min="0" step="0.01" value={f.premium} onChange={set('premium')} /></label>
         <label>כל
           <div className="seg">
