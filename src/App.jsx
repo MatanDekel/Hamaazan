@@ -6,7 +6,7 @@ import { demoTransactions } from './demoExpenses';
 import Expenses from './Expenses';
 import Dashboards from './Dashboards';
 import Plans, { PlansProvider } from './Plans';
-import Insurance from './Insurance';
+import Insurance, { syncRecurring } from './Insurance';
 import { useExpenseData } from './expenseData';
 import { buildModel } from './expenseCalc';
 import Login from './Login';
@@ -116,7 +116,7 @@ function Shell({ family, funds, manual = [], plans = [], api, user, demo, onLogo
           recurring={family.recurring || []} onSaveRecurring={(r) => api.updateFamily({ recurring: r })} />}
         {tab === 'dash' && <Dashboards exp={exp} model={model} />}
         {tab === 'plans' && <Plans plans={plans} api={api} />}
-        {tab === 'ins' && <Insurance items={family.insurance || []} owners={family.owners || []} onSave={(list) => api.updateFamily({ insurance: list })} />}
+        {tab === 'ins' && <Insurance items={family.insurance || []} owners={family.owners || []} onSave={(list) => api.updateFamily({ insurance: list, recurring: syncRecurring(list, family.recurring || []) })} />}
         {tab === 'family' && <Family family={family} api={api} myEmail={user.email?.toLowerCase()} demo={demo} />}
       </main>
 

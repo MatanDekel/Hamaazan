@@ -115,8 +115,14 @@ export default function Recurring({ items = [], onSave }) {
                   <div className="rec-when"><span>{dateFmt(r.next)}</span><small className="muted">{whenText(r.next)}</small></div>
                   <div className="rec-money"><span className="num">{ils(r.amount)}</span></div>
                   <div className="rec-actions">
-                    <button className="link" onClick={() => setEditing(r)}>עריכה</button>
-                    <button className="icon-btn" onClick={() => remove(r)} aria-label={`מחיקת ${r.name}`}>✕</button>
+                    {r.source === 'insurance' ? (
+                      <span className="tag" title="נוסף מלשונית ביטוחים — עורכים שם">מביטוחים</span>
+                    ) : (
+                      <>
+                        <button className="link" onClick={() => setEditing(r)}>עריכה</button>
+                        <button className="icon-btn" onClick={() => remove(r)} aria-label={`מחיקת ${r.name}`}>✕</button>
+                      </>
+                    )}
                   </div>
                 </li>
               ))}

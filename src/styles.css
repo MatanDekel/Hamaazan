@@ -505,3 +505,4 @@ body::before { background: color-mix(in srgb, #ffffff 88%, transparent); }
 .ins-status.ended { background: var(--track); color: var(--ink-3); }
 .ins-status.future { background: var(--track); color: var(--ink-2); }
 .form label > .seg { align-self: flex-start; }
+.ins-renew { margin: 0; font-size: .82rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 10px; padding: .4rem .7rem; }

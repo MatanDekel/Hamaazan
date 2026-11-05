@@ -19,6 +19,16 @@ function statusOf(p) {
   return { key: 'active', text: 'פעיל' };
 }
 
+// ביטוח שמתחדש כל שנה נכנס אוטומטית להוצאות התקופתיות, בתאריך הסיום שלו
+export function syncRecurring(insList, recurring = []) {
+  const keep = recurring.filter((r) => r.source !== 'insurance' || insList.some((p) => p.renews && `ins-${p.id}` === r.id));
+  const fromIns = insList.filter((p) => p.renews && p.period === 'year').map((p) => ({
+    id: `ins-${p.id}`, source: 'insurance', name: `${p.type} — ${p.company}${p.insured && p.insured !== 'כולנו' ? ` (${p.insured})` : ''}`,
+    amount: +p.premium || 0, every: 12, date: p.to || p.from || todayISO(), note: 'חידוש ביטוח',
+  }));
+  return [...keep.filter((r) => !fromIns.some((x) => x.id === r.id)), ...fromIns];
+}
+
 export default function Insurance({ items = [], owners = [], onSave }) {
   const [editing, setEditing] = useState(null);
   const [who, setWho] = useState('all');
@@ -32,6 +42,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
     .filter((g) => g.list.length);
 
   const save = (p) => onSave(p.id && items.some((x) => x.id === p.id) ? items.map((x) => (x.id === p.id ? p : x)) : [...items, { ...p, id: uid() }]);
+  // onSave מקבל את הרשימה החדשה; הסנכרון להוצאות התקופתיות נעשה ב-App
   const remove = (p) => confirm(`למחוק את "${p.type} — ${p.company}"?`) && onSave(items.filter((x) => x.id !== p.id));
   const copy = async (num) => {
     try { await navigator.clipboard.writeText(num); setCopied(num); setTimeout(() => setCopied(''), 1500); } catch { /* ignore */ }
@@ -90,6 +101,7 @@ export default function Insurance({ items = [], owners = [], onSave }) {
                           ) : '—'}
                         </dd></div>
                       </dl>
+                      {p.renews && p.period === 'year' && <p className="ins-renew">מתחדש כל שנה · מופיע בהוצאות התקופתיות ב-<bdi>{dateFmt(p.to || p.from)}</bdi></p>}
                       {p.note && <p className="ins-note">{p.note}</p>}
                       <div className="ins-foot">
                         <span className={`ins-status ${st.key}`}>{st.text}</span>
@@ -130,6 +142,7 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
     if (!f.company.trim() || f.company === 'אחר') return setErr('בחרו חברת ביטוח או כתבו את שמה.');
     if (!(+f.premium >= 0) || f.premium === '') return setErr('הזינו את סכום התשלום.');
     if (f.from && f.to && f.to < f.from) return setErr('תאריך הסיום לפני תאריך ההתחלה.');
+    if (f.renews && f.period === 'year' && !f.to) return setErr('לביטוח שמתחדש כל שנה צריך תאריך סיום — זה תאריך החידוש.');
     try {
       await onSave({ ...(initial?.id ? { id: initial.id } : {}), ...f, type: f.type.trim(), company: f.company.trim(), premium: +f.premium, coverage: f.coverage.trim(), policy: f.policy.trim(), note: f.note.trim() });
       onClose();
@@ -181,6 +194,12 @@ function InsuranceForm({ initial, owners, onClose, onSave }) {
             <button type="button" className={f.period === 'year' ? 'on' : ''} onClick={() => setF((s) => ({ ...s, period: 'year' }))}>שנה</button>
           </div>
         </label>
+        {f.period === 'year' ? (
+          <label className="check full">
+            <input type="checkbox" checked={!!f.renews} onChange={(e) => setF((s) => ({ ...s, renews: e.target.checked }))} />
+            <span>מתחדש כל שנה<small>יתווסף להוצאות התקופתיות בלשונית הוצאות, בתאריך הסיום — כדי שתדעו להתכונן לחידוש</small></span>
+          </label>
+        ) : <span className="full" />}
         <label>מתאריך<DateInput value={f.from} onChange={set('from')} /></label>
         <label>עד תאריך<DateInput value={f.to} onChange={set('to')} /></label>
         <label className="full">הערה<input value={f.note} onChange={set('note')} placeholder="לא חובה — למשל: סוכן, טלפון, מתי לבדוק חידוש" /></label>
