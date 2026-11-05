@@ -1,28 +1,19 @@
 :root {
-  /* בהיר: לבן, ירוק עתיק, חום בהיר */
-  --bg: #fbfaf7; --surface: #ffffff; --track: #f2eee7; --ink: #4b4036; --ink-2: #7d6f62; --ink-3: #b0a396;
-  --line: #efe9e0; --accent: #6f8b67; --accent-ink: #fff; --accent-soft: rgba(111, 139, 103, .12);
-  --up: #5f8a5a; --down: #c0785a; --warn: #c9a06a;
-  --t-stocks: #6f8b67; --t-sp: #c8a27a; --t-solid: #ddd0bf;
-  --shadow: 0 1px 2px rgba(75, 64, 54, .04), 0 8px 24px rgba(75, 64, 54, .05);
+  /* בהיר ושמח: לבן, ירוק עתיק, חום בהיר */
+  --bg: #ffffff; --surface: #ffffff; --track: #f3f0ea; --ink: #463b31; --ink-2: #7a6c5f; --ink-3: #ad9f92;
+  --line: #eee8df; --accent: #6a9460; --accent-ink: #fff; --accent-soft: rgba(106, 148, 96, .12);
+  --up: #4f8a4a; --down: #c27556; --warn: #d1a067;
+  --t-stocks: #6a9460; --t-sp: #d4ab7c; --t-solid: #e2d5c3;
+  --shadow: 0 1px 2px rgba(70, 59, 49, .05), 0 6px 22px rgba(70, 59, 49, .07);
   --radius: 18px;
   --serif: 'Heebo', 'Segoe UI', Arial, sans-serif;
   --sans: 'Heebo', 'Segoe UI', Arial, sans-serif;
-  color-scheme: light;
+  color-scheme: only light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #171512; --surface: #201d19; --track: #2a2621; --ink: #efe9e1; --ink-2: #c2b7aa; --ink-3: #8a7f73;
-    --line: #2f2a24; --accent: #a3bf98; --accent-ink: #171512; --accent-soft: rgba(163, 191, 152, .14);
-    --up: #a3bf98; --down: #e0a283; --warn: #d9b893;
-    --t-stocks: #a3bf98; --t-sp: #d9b893; --t-solid: #6e6457;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
-    color-scheme: dark;
-  }
-}
+
 *, *::before, *::after { box-sizing: inherit; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
@@ -410,7 +401,6 @@ input, select { border-radius: 12px; border-color: var(--line); }
 .seg { background: var(--track); border: 0; padding: 4px; border-radius: 12px; }
 .seg button { border-radius: 9px; }
 .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(30, 34, 51, .12); }
-@media (prefers-color-scheme: dark) { .seg button.on { background: #36312a; } }
 
 /* כרטיסים */
 .panel, .cap, .filter-bar, .snap-form, .plan-card, .modal, .login-inner .code-form, .table-wrap,
@@ -478,3 +468,11 @@ input, select { border-radius: 12px; border-color: var(--line); }
 .date-native { position: absolute; inset-inline-start: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 .date-input input[type="text"] { padding-inline-start: .7rem; padding-left: 2.6rem; padding-right: .7rem; }
 .date-btn { inset-inline-start: auto; left: .35rem; right: auto; }
+
+/* תמיד בהיר — גם כשהטלפון במצב כהה */
+html { color-scheme: only light; background: #fff; }
+.top { background: color-mix(in srgb, #ffffff 88%, transparent); }
+body::before { background: color-mix(in srgb, #ffffff 88%, transparent); }
+.stats > div, .month-summary > div, .panel, .cap, .filter-bar, .snap-form, .table-wrap, .fund-list, .month-cats, .plan-subs, .merchants, .rec-list, .up-month, .plan-card {
+  background: linear-gradient(180deg, #ffffff, #fcfbf8);
+}
