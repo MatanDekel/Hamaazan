@@ -1,7 +1,7 @@
 // צבעי בסיס ואחריהם פסטלים — לקטגוריות ולגרפים
 export const PALETTE = [
-  '#7b83f5', '#5cc8a8', '#f4b06a', '#f08fa6', '#a88bf5', '#62bfe6',
-  '#c7d36b', '#f6a6cf', '#9aa7bd', '#7fd6b6', '#f7cf6a', '#c6b9fb',
+  '#7f9a76', '#c8a27a', '#a9bf9d', '#a98468', '#d9c4a6', '#8fa686',
+  '#e4d3bb', '#8a7a6c', '#c6d5b9', '#b89b82', '#b5c7a6', '#e9dccb',
 ];
 export const REST_COLOR = 'var(--t-solid)';
 
@@ -18,7 +18,7 @@ const mDate = (m) => { const [y, mm] = m.split('-'); return new Date(+y, +mm - 1
 export const monthShort = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'short' }).replace('׳', '').replace('.', '');
 export const monthLong = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 export const monthName = (m) => mDate(m).toLocaleDateString('he-IL', { month: 'long' });
-export const INCOME_COLORS = ['#1f9e74', '#5cc8a8', '#7fd6b6', '#62bfe6', '#a9e3cf'];
+export const INCOME_COLORS = ['#5f8a5a', '#8fa686', '#a9bf9d', '#c6d5b9', '#c8a27a'];
 
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 
