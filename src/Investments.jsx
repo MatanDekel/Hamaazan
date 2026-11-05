@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { analyzeFund, ils, pct, tone, dateFmt, yearDeposits } from './calc';
-import { TRACKS, kindOf, DEFAULT_CAP, CAPPED_KINDS, KINDS } from './constants';
-import { AllocationBar } from './ui';
+import { TRACKS, kindOf, DEFAULT_CAP, CAPPED_KINDS, KINDS, uid } from './constants';
+import { useState as useStateG } from 'react';
+import { AllocationBar, Modal } from './ui';
 
 export default function Investments({ funds, family, api, onOpen, onAdd }) {
   const [owner, setOwner] = useState('all');
@@ -66,6 +67,8 @@ export default function Investments({ funds, family, api, onOpen, onAdd }) {
               <div><dt>חסכונות</dt><dd>{shown.length}</dd></div>
             </dl>
           </div>
+
+          <GroupTiles items={shown} allFunds={funds} groups={family.fundGroups} onSave={(g) => api.updateFamily({ fundGroups: g })} />
 
           <DepositCap funds={funds} owners={owners} cap={family.depositCap ?? DEFAULT_CAP} onCap={(v) => api.updateFamily({ depositCap: v })} />
 
@@ -169,5 +172,111 @@ function DepositCap({ funds, owners, cap, onCap }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/* ---------- רובריקות: קבוצות חסכונות שהצבירה שלהן מוצגת יחד ---------- */
+
+// ברירת מחדל עד שמגדירים לבד: לפי סוג החיסכון
+function defaultGroups(funds) {
+  const by = (pred) => funds.filter(pred).map((f) => f.id);
+  return [
+    { id: 'd-pension', name: 'פנסיה', fundIds: by((f) => f.kind === 'pension') },
+    { id: 'd-gemel', name: 'קופות גמל', fundIds: by((f) => !f.kind || f.kind === 'gemel') },
+    { id: 'd-hish', name: 'קרן השתלמות', fundIds: by((f) => f.kind === 'hishtalmut') },
+    { id: 'd-other', name: 'השאר', fundIds: by((f) => f.kind && !['pension', 'gemel', 'hishtalmut'].includes(f.kind)) },
+  ];
+}
+
+function GroupTiles({ items, allFunds, groups, onSave }) {
+  const [editing, setEditing] = useStateG(false);
+  const custom = Array.isArray(groups) && groups.length > 0;
+  const list = custom ? groups : defaultGroups(allFunds);
+  const byId = Object.fromEntries(items.map((i) => [i.f.id, i]));
+
+  const tiles = list.map((g) => {
+    const members = g.fundIds.map((id) => byId[id]).filter(Boolean);
+    const value = members.reduce((t, { a }) => t + (a.balance ?? a.principal), 0);
+    const principal = members.reduce((t, { a }) => t + a.principal, 0);
+    const monthly = members.reduce((t, { f }) => t + (+f.monthlyDeposit || 0), 0);
+    return { ...g, members, value, principal, monthly, profit: value - principal };
+  }).filter((t) => t.members.length);
+  const grouped = new Set(list.flatMap((g) => g.fundIds));
+  const loose = items.filter((i) => !grouped.has(i.f.id));
+
+  return (
+    <div className="group-tiles">
+      <div className="gt-head">
+        <h3>לפי רובריקות</h3>
+        <button className="link" onClick={() => setEditing(true)}>עריכת רובריקות</button>
+      </div>
+      <div className="gt-grid">
+        {tiles.map((t) => (
+          <div key={t.id} className="gt-tile">
+            <span className="gt-name">{t.name}</span>
+            <strong className="gt-value">{ils(t.value)}</strong>
+            <span className={`gt-profit ${tone(t.profit)}`}>
+              {t.profit >= 0 ? '+' : '−'}{ils(Math.abs(t.profit))}{t.principal > 0 ? ` · ${pct(t.profit / t.principal)}` : ''}
+            </span>
+            <span className="gt-meta">הופקדו {ils(t.principal)} · {ils(t.monthly)} בחודש</span>
+            <span className="gt-members">{t.members.map(({ f }) => f.name).join(' · ')}</span>
+          </div>
+        ))}
+        {custom && loose.length > 0 && (
+          <div className="gt-tile loose">
+            <span className="gt-name">לא בשום רובריקה</span>
+            <strong className="gt-value">{ils(loose.reduce((t, { a }) => t + (a.balance ?? a.principal), 0))}</strong>
+            <span className="gt-members">{loose.map(({ f }) => f.name).join(' · ')}</span>
+          </div>
+        )}
+      </div>
+      {editing && <GroupsEditor funds={allFunds} groups={list} custom={custom} onClose={() => setEditing(false)} onSave={onSave} />}
+    </div>
+  );
+}
+
+function GroupsEditor({ funds, groups, custom, onClose, onSave }) {
+  const [gs, setGs] = useStateG(() => groups.map((g) => ({ ...g, id: g.id.startsWith('d-') ? uid() : g.id, fundIds: [...g.fundIds] })));
+  const [err, setErr] = useStateG('');
+  const upd = (id, patch) => setGs((x) => x.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+  const toggle = (g, fid) => upd(g.id, { fundIds: g.fundIds.includes(fid) ? g.fundIds.filter((x) => x !== fid) : [...g.fundIds, fid] });
+  const save = async () => {
+    const clean = gs.map((g) => ({ ...g, name: g.name.trim() })).filter((g) => g.name);
+    if (!clean.length) return setErr('צריך לפחות רובריקה אחת עם שם.');
+    try { await onSave(clean); onClose(); } catch (e) { setErr('השמירה נכשלה: ' + e.message); }
+  };
+
+  return (
+    <Modal title="עריכת רובריקות" onClose={onClose}>
+      <p className="muted" style={{ marginTop: 0 }}>בחרי אילו חסכונות נספרים יחד בכל רובריקה. חיסכון יכול להיות ביותר מרובריקה אחת.</p>
+      <div className="ge-list">
+        {gs.map((g) => (
+          <fieldset key={g.id} className="ge-group">
+            <div className="ge-top">
+              <input value={g.name} onChange={(e) => upd(g.id, { name: e.target.value })} placeholder="שם הרובריקה" aria-label="שם הרובריקה" />
+              <button type="button" className="icon-btn" onClick={() => setGs((x) => x.filter((y) => y.id !== g.id))} aria-label={`מחיקת ${g.name}`}>✕</button>
+            </div>
+            <div className="ge-funds">
+              {funds.map((f) => (
+                <label key={f.id} className={`ge-fund${g.fundIds.includes(f.id) ? ' on' : ''}`}>
+                  <input type="checkbox" checked={g.fundIds.includes(f.id)} onChange={() => toggle(g, f.id)} />
+                  <span>{f.name}<small>{kindOf(f)} · {f.owner}{f.shared ? ' · משותף' : ''}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+      </div>
+      <button type="button" className="btn ghost" onClick={() => setGs((x) => [...x, { id: uid(), name: '', fundIds: [] }])}>הוספת רובריקה</button>
+      {err && <p className="err">{err}</p>}
+      <div className="form-actions">
+        {custom && (
+          <button type="button" className="btn ghost" style={{ marginInlineEnd: 'auto' }}
+            onClick={async () => { await onSave([]); onClose(); }}>חזרה לחלוקה לפי סוג</button>
+        )}
+        <button type="button" className="btn ghost" onClick={onClose}>ביטול</button>
+        <button type="button" className="btn primary" onClick={save}>שמירה</button>
+      </div>
+    </Modal>
   );
 }

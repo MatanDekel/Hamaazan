@@ -506,3 +506,26 @@ body::before { background: color-mix(in srgb, #ffffff 88%, transparent); }
 .ins-status.future { background: var(--track); color: var(--ink-2); }
 .form label > .seg { align-self: flex-start; }
 .ins-renew { margin: 0; font-size: .82rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 10px; padding: .4rem .7rem; }
+
+/* fund groups */
+.group-tiles { margin: 1.5rem 0 .5rem; }
+.gt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .6rem; }
+.gt-head h3 { margin: 0; }
+.gt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .75rem; }
+.gt-tile { display: flex; flex-direction: column; gap: .2rem; padding: 1rem 1.1rem; background: linear-gradient(180deg, #ffffff, #fcfbf8); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.gt-tile.loose { background: var(--track); box-shadow: none; }
+.gt-name { font-weight: 700; color: var(--ink-2); }
+.gt-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.gt-profit { font-weight: 700; font-size: .92rem; }
+.gt-meta { font-size: .82rem; color: var(--ink-3); }
+.gt-members { font-size: .8rem; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: .4rem; margin-top: .3rem; }
+.ge-list { display: grid; gap: .9rem; margin-bottom: 1rem; }
+.ge-group { border: 1px solid var(--line); border-radius: 14px; padding: .8rem; margin: 0; }
+.ge-top { display: flex; gap: .5rem; align-items: center; margin-bottom: .6rem; }
+.ge-top input { font-weight: 700; }
+.ge-funds { display: grid; gap: .35rem; }
+.ge-fund { display: flex; align-items: center; gap: .6rem; padding: .45rem .6rem; border-radius: 10px; cursor: pointer; }
+.ge-fund.on { background: var(--accent-soft); }
+.ge-fund input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); flex: none; }
+.ge-fund span { display: flex; flex-direction: column; }
+.ge-fund small { color: var(--ink-3); font-size: .78rem; }
